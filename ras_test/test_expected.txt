@@ -1,0 +1,35 @@
+add w0, w1, #0x123
+adds x2, x3, #1, lsl #12
+sub w4, w5, #0xabc
+subs x6, x7, #0xa, lsl #12
+add w8, w9, w10
+adds x11, x12, w13, uxtb
+sub w14, w15, w16, uxth #3
+subs w17, w18, w19, uxtw #3
+add x20, x21, x22, uxtx #3
+adds x23, x24, w25, sxtb #2
+sub w26, w27, w28, sxth
+subs x29, x30, w0, sxtw #1
+add x0, x1, x2, sxtx #2
+adds w0, w1, w2, lsl #3
+sub x0, x1, x2, lsr #50
+subs w0, w1, w2, asr #20
+movk w0, #0x1234
+mov w0, #0x12340000
+mov x0, #-0x1235
+movk x0, #0x1234, lsl #16
+mov x0, #0x123400000000
+mov x0, #-0x1234000000000001
+strb w0, [x1, x2]
+ldurb w0, [x1, #0x10]
+ldursb w0, [x1, #-0x10]
+strh w0, [x1, #0xffe]
+ldrh w0, [x1, #0x20]!
+ldrsh w0, [x1], #0xffffffffffffffe0
+ldr w0, [x1, #0xffc]
+ldrsw x0, [x1, x2, sxtx]
+ldr x0, [x1, #0xff8]
+str w0, [x1, w2, uxtw]
+str x0, [x1, w2, sxtw #3]
+ldr w0, [x1, x2, lsl #2]
+ldrh w0, [x1, w2, uxtw #1]
