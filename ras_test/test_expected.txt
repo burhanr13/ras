@@ -1,3 +1,7 @@
+b #0x10
+bl #0
+b #0x10
+bl #0
 add w0, w1, #0x123
 adds x2, x3, #1, lsl #12
 sub w4, w5, #0xabc
@@ -23,12 +27,12 @@ mov x0, #-0x1234000000000001
 strb w0, [x1, x2]
 ldurb w0, [x1, #0x10]
 ldursb w0, [x1, #-0x10]
-strh w0, [x1, #0xffe]
+strh w0, [x1, #0x1ffe]
 ldrh w0, [x1, #0x20]!
 ldrsh w0, [x1], #0xffffffffffffffe0
-ldr w0, [x1, #0xffc]
+ldr w0, [x1, #0x3ffc]
 ldrsw x0, [x1, x2, sxtx]
-ldr x0, [x1, #0xff8]
+ldr x0, [x1, #0x7ff8]
 str w0, [x1, w2, uxtw]
 str x0, [x1, w2, sxtw #3]
 ldr w0, [x1, x2, lsl #2]

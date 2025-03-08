@@ -7,6 +7,131 @@
 #define RAS_CTX_VAR ctx
 #endif
 
+#define __EMIT(name, ...) rasEmit##name(RAS_CTX_VAR, __VA_ARGS__)
+
+#define __ID(...) __VA_ARGS__
+#define __VA_DFL_(dfl, fun, ...) dfl
+#define __VA_DFL_1(dfl, fun, ...) fun(__VA_ARGS__)
+#define __VA_DFL(dfl, fun, ...) __VA_DFL_##__VA_OPT__(1)(dfl, fun, __VA_ARGS__)
+
+#define __OPTION_SHIFT(...) __VA_DFL(lsl(0), __ID, __VA_ARGS__)
+
+// unfortunately generic requires all branches to be well typed
+// solve this by using more generic
+#define __OP_IMM(op) _Generic(op, rasReg: 0, default: op)
+#define __FORCE(type, val) _Generic(val, type: val, default: (type) {0})
+#define __OP_IMML(op) _Generic(op, rasLabel: 0, default: op)
+
+#define word(w) __EMIT(Word, w)
+#define dword(d)                                                               \
+    _Generic(d,                                                                \
+        rasLabel: __EMIT(AbsAddr, __FORCE(rasLabel, d)),                       \
+        default: __EMIT(Dword, __OP_IMML(d)))
+
+#define addsub(op, s, rd, rn, op2, ...)                                        \
+    _addsub(op, s, rd, rn, op2, __OPTION_SHIFT(__VA_ARGS__))
+#define _addsub(op, s, rd, rn, op2, mod)                                       \
+    _Generic(op2,                                                              \
+        rasReg: _Generic(mod,                                                  \
+            rasShift: __EMIT(AddSubShiftedReg, op, s, __FORCE(rasShift, mod),  \
+                             __FORCE(rasReg, op2), rn, rd),                    \
+            rasExtend: __EMIT(AddSubExtendedReg, op, s,                        \
+                              __FORCE(rasExtend, mod), __FORCE(rasReg, op2),   \
+                              rn, rd)),                                        \
+        default: __EMIT(AddSubImm, op, s, __FORCE(rasShift, mod),              \
+                        __OP_IMM(op2), rn, rd))
+
+#define add(rd, rn, op2, ...) addsub(0, 0, rd, rn, op2, __VA_ARGS__)
+#define adds(rd, rn, op2, ...) addsub(0, 1, rd, rn, op2, __VA_ARGS__)
+#define sub(rd, rn, op2, ...) addsub(1, 0, rd, rn, op2, __VA_ARGS__)
+#define subs(rd, rn, op2, ...) addsub(1, 1, rd, rn, op2, __VA_ARGS__)
+
+#define movewide(opc, rd, imm, ...)                                            \
+    __EMIT(MoveWide, opc, __OPTION_SHIFT(__VA_ARGS__), imm, rd)
+
+#define movn(rd, imm, ...) movewide(0, rd, imm, __VA_ARGS__)
+#define movz(rd, imm, ...) movewide(2, rd, imm, __VA_ARGS__)
+#define movk(rd, imm, ...) movewide(3, rd, imm, __VA_ARGS__)
+
+#define __EXT_OF_SHIFT(s)                                                      \
+    _Generic(s, rasShift: ((rasExtend) {s.amt, 3, s.type != 0}), rasExtend: s)
+
+#define ptr(rn, ...) _ptr(rn, __VA_DFL(0, __ID, __VA_ARGS__))
+// need to do this so result of __VA_DFL is not treated as one arg
+#define _ptr(x, y) __ptr(x, y)
+#define __ptr(rn, off, ...)                                                    \
+    _Generic(off,                                                              \
+        rasReg: ((rasAddrReg) {rn, __FORCE(rasReg, off),                       \
+                               __EXT_OF_SHIFT(__OPTION_SHIFT(__VA_ARGS__))}),  \
+        default: ((rasAddrImm) {rn, 0, __OP_IMM(off)}))
+
+#define post_ptr(rn, off) ((rasAddrImm) {rn, 1, off})
+#define pre_ptr(rn, off) ((rasAddrImm) {rn, 3, off})
+
+#define loadstore(size, opc, rt, amod)                                         \
+    _Generic(amod,                                                             \
+        rasAddrReg: __EMIT(LoadStoreRegOff, size, opc,                         \
+                           __FORCE(rasAddrReg, amod), rt),                     \
+        rasAddrImm: __EMIT(LoadStoreImmOff, size, opc,                         \
+                           __FORCE(rasAddrImm, amod), rt))
+
+#define strb(rt, amod) loadstore(0, 0, rt, amod)
+#define ldrb(rt, amod) loadstore(0, 1, rt, amod)
+#define ldrsb(rt, amod) loadstore(0, 2, rt, amod)
+#define strh(rt, amod) loadstore(1, 0, rt, amod)
+#define ldrh(rt, amod) loadstore(1, 1, rt, amod)
+#define ldrsh(rt, amod) loadstore(1, 2, rt, amod)
+#define str(rt, amod) loadstore(2, 0, rt, amod)
+#define ldr(rt, amod) loadstore(2, 1, rt, amod)
+#define ldrsw(rt, amod) loadstore(2, 2, rt, amod)
+
+#define branchuncondimm(op, l) __EMIT(BranchUncondImm, op, l)
+
+#define b(l, ...) branchuncondimm(0, l)
+//__VA_DFL(branchuncondimm(0, l),   __EMIT(BranchCondImm, __VA_ARGS__, 0, l))
+#define bl(l) branchuncondimm(1, l)
+
+#define eq 0
+#define ne 1
+#define cs 2
+#define cc 3
+#define mi 4
+#define pl 5
+#define vs 6
+#define vc 7
+#define hi 8
+#define ls 9
+#define ge 10
+#define lt 11
+#define gt 12
+#define le 13
+#define al 14
+#define nv 15
+#define hs cs
+#define lo cc
+
+#define lsl(s, ...) ((rasShift) {s, 0})
+#define lsr(s, ...) ((rasShift) {s, 1})
+#define asr(s, ...) ((rasShift) {s, 2})
+
+#define extend(type, ...) _extend(type, __VA_DFL(0, __ID, __VA_ARGS__))
+#define _extend(type, s, ...) ((rasExtend) {s, type})
+
+#define uxtb(...) extend(0, __VA_ARGS__)
+#define uxth(...) extend(1, __VA_ARGS__)
+#define uxtw(...) extend(2, __VA_ARGS__)
+#define uxtx(...) extend(3, __VA_ARGS__)
+#define sxtb(...) extend(4, __VA_ARGS__)
+#define sxth(...) extend(5, __VA_ARGS__)
+#define sxtw(...) extend(6, __VA_ARGS__)
+#define sxtx(...) extend(7, __VA_ARGS__)
+
+#define Label(l, ...) rasLabel l = Lnew(__VA_ARGS__)
+#define Lnew(...) __VA_DFL(_Lnew(), _Lnewext, __VA_ARGS__)
+#define _Lnew() rasDeclareLabel(RAS_CTX_VAR)
+#define _Lnewext(addr) rasDefineLabelExternal(_Lnew(), addr)
+#define L(l) rasDefineLabel(RAS_CTX_VAR, l)
+
 #define wreg(n) ((rasReg) {n, 0})
 #define xreg(n) ((rasReg) {n, 1})
 
@@ -80,93 +205,7 @@
 #define xzr ((rasReg) {31, 1, 0})
 #define sp ((rasReg) {31, 1, 1})
 
-#define __EMIT(name, ...) rasEmit##name(RAS_CTX_VAR, __VA_ARGS__)
-
-#define word(w) __EMIT(Word, w)
-#define dword(d) __EMIT(Dword, d)
-
-#define __VA_DFL_(dfl, ...) dfl
-#define __VA_DFL_1(dfl, ...) __VA_ARGS__
-#define __VA_DFL(dfl, ...) __VA_DFL_##__VA_OPT__(1)(dfl, __VA_ARGS__)
-
-#define __OPTION_SHIFT(...) __VA_DFL(lsl(0), __VA_ARGS__)
-
-// unfortunately generic requires all branches to be well typed
-// solve this by using more generic
-#define __OP_IMM(op) _Generic(op, rasReg: 0, default: op)
-#define __FORCE(type, val) _Generic(val, type: val, default: (type) {0})
-
-#define addsub(op, s, rd, rn, op2, ...)                                        \
-    _addsub(op, s, rd, rn, op2, __OPTION_SHIFT(__VA_ARGS__))
-#define _addsub(op, s, rd, rn, op2, mod)                                       \
-    _Generic(op2,                                                              \
-        rasReg: _Generic(mod,                                                  \
-            rasShift: __EMIT(AddSubShiftedReg, op, s, __FORCE(rasShift, mod),  \
-                             __FORCE(rasReg, op2), rn, rd),                    \
-            rasExtend: __EMIT(AddSubExtendedReg, op, s,                        \
-                              __FORCE(rasExtend, mod), __FORCE(rasReg, op2),   \
-                              rn, rd)),                                        \
-        default: __EMIT(AddSubImm, op, s, __FORCE(rasShift, mod),              \
-                        __OP_IMM(op2), rn, rd))
-
-#define add(rd, rn, op2, ...) addsub(0, 0, rd, rn, op2, __VA_ARGS__)
-#define adds(rd, rn, op2, ...) addsub(0, 1, rd, rn, op2, __VA_ARGS__)
-#define sub(rd, rn, op2, ...) addsub(1, 0, rd, rn, op2, __VA_ARGS__)
-#define subs(rd, rn, op2, ...) addsub(1, 1, rd, rn, op2, __VA_ARGS__)
-
-#define movewide(opc, rd, imm, ...)                                            \
-    __EMIT(MoveWide, opc, __OPTION_SHIFT(__VA_ARGS__), imm, rd)
-
-#define movn(rd, imm, ...) movewide(0, rd, imm, __VA_ARGS__)
-#define movz(rd, imm, ...) movewide(2, rd, imm, __VA_ARGS__)
-#define movk(rd, imm, ...) movewide(3, rd, imm, __VA_ARGS__)
-
-#define __EXT_OF_SHIFT(s)                                                      \
-    _Generic(s, rasShift: ((rasExtend) {s.amt, 3, s.type != 0}), rasExtend: s)
-
-#define ptr(rn, ...) _ptr(rn, __VA_DFL(0, __VA_ARGS__))
-// need to do this so result of __VA_DFL is not treated as one arg
-#define _ptr(x, y) __ptr(x, y)
-#define __ptr(rn, off, ...)                                                    \
-    _Generic(off,                                                              \
-        rasReg: ((rasAddrReg) {rn, __FORCE(rasReg, off),                       \
-                               __EXT_OF_SHIFT(__OPTION_SHIFT(__VA_ARGS__))}),  \
-        default: ((rasAddrImm) {rn, 0, __OP_IMM(off)}))
-
-#define post_ptr(rn, off) ((rasAddrImm) {rn, 1, off})
-#define pre_ptr(rn, off) ((rasAddrImm) {rn, 3, off})
-
-#define loadstore(size, opc, rt, amod)                                         \
-    _Generic(amod,                                                             \
-        rasAddrReg: __EMIT(LoadStoreRegOff, size, opc,                         \
-                           __FORCE(rasAddrReg, amod), rt),                     \
-        rasAddrImm: __EMIT(LoadStoreImmOff, size, opc,                         \
-                           __FORCE(rasAddrImm, amod), rt))
-
-#define strb(rt, amod) loadstore(0, 0, rt, amod)
-#define ldrb(rt, amod) loadstore(0, 1, rt, amod)
-#define ldrsb(rt, amod) loadstore(0, 2, rt, amod)
-#define strh(rt, amod) loadstore(1, 0, rt, amod)
-#define ldrh(rt, amod) loadstore(1, 1, rt, amod)
-#define ldrsh(rt, amod) loadstore(1, 2, rt, amod)
-#define str(rt, amod) loadstore(2, 0, rt, amod)
-#define ldr(rt, amod) loadstore(2, 1, rt, amod)
-#define ldrsw(rt, amod) loadstore(2, 2, rt, amod)
-
-#define lsl(s, ...) ((rasShift) {s, 0})
-#define lsr(s, ...) ((rasShift) {s, 1})
-#define asr(s, ...) ((rasShift) {s, 2})
-
-#define extend(type, ...) _extend(type, __VA_DFL(0, __VA_ARGS__))
-#define _extend(type, s, ...) ((rasExtend) {s, type})
-
-#define uxtb(...) extend(0, __VA_ARGS__)
-#define uxth(...) extend(1, __VA_ARGS__)
-#define uxtw(...) extend(2, __VA_ARGS__)
-#define uxtx(...) extend(3, __VA_ARGS__)
-#define sxtb(...) extend(4, __VA_ARGS__)
-#define sxth(...) extend(5, __VA_ARGS__)
-#define sxtw(...) extend(6, __VA_ARGS__)
-#define sxtx(...) extend(7, __VA_ARGS__)
+#define fp x29
+#define lr x30
 
 #endif

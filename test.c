@@ -4,18 +4,25 @@
 #include "ras/ras.h"
 #include "ras/ras_macros.h"
 
+int test() {
+    return 2;
+}
+
 int main() {
     rasBlock* ctx = rasCreate(16384);
 
-    ldr(w0, ptr(x1, 0xff0));
-
+    str(lr, pre_ptr(sp, -0x10));
+    bl(Lnew(test));
+    ldr(lr, post_ptr(sp, 0x10));
     word(0xd65f03c0); // ret
+
+    b(eq, Lnew());
+    b(Lnew());
 
     rasReady(ctx);
 
     int (*f)() = rasGetCode(ctx);
-
-    printf("%08x\n", f());
+    printf("%d\n", f());
 
     rasDestroy(ctx);
 }

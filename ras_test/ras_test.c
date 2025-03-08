@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "../ras/ras.h"
+#define RAS_CTX_VAR testCode
 #include "../ras/ras_macros.h"
 
 void errorCb(rasError err) {
@@ -14,9 +15,11 @@ void errorCb(rasError err) {
 int main() {
     rasSetErrorCallback(errorCb);
 
-    rasBlock* ctx = rasCreate(16384);
+    rasBlock* testCode = rasCreate(16384);
 
 #include "test_input.txt"
+
+    rasReady(testCode);
 
     FILE* testin = fopen("test_expected.txt", "r");
     FILE* testout = fopen("test_actual.txt", "w");
@@ -27,8 +30,8 @@ int main() {
     csh handle;
     cs_insn* insn;
     cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);
-    size_t count =
-        cs_disasm(handle, rasGetCode(ctx), rasGetSize(ctx), 0, 0, &insn);
+    size_t count = cs_disasm(handle, rasGetCode(testCode), rasGetSize(testCode),
+                             0, 0, &insn);
     for (size_t i = 0; i < count; i++) {
         char expected[1000];
         fgets(expected, 1000, testin);
@@ -48,7 +51,7 @@ int main() {
     fclose(testin);
     fclose(testout);
 
-    rasDestroy(ctx);
+    rasDestroy(testCode);
 
     return failct;
 }
