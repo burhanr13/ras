@@ -1,3 +1,21 @@
+b #8
+bl #0
+b.eq #0
+b.ne #8
+b.hs #0x28
+b.lo #0x48
+b.vs #0
+b.vc #8
+b.mi #0x28
+b.pl #0x48
+b.hi #0
+b.ls #8
+b.ge #0x28
+b.lt #0x48
+b.gt #0
+b.le #8
+b.al #0x28
+b.nv #0x48
 add w0, w1, #0x123
 adds x2, x3, #1, lsl #12
 sub w4, w5, #0xabc
@@ -14,6 +32,16 @@ add x0, x1, x2, sxtx #2
 adds w0, w1, w2, lsl #3
 sub x0, x1, x2, lsr #50
 subs w0, w1, w2, asr #20
+add sp, sp, #4
+add w0, wsp, w1
+add sp, sp, w0, sxtw #2
+sub x0, sp, #4
+cmp w0, w1
+cmn x0, x1
+cmp w0, w1, asr #5
+cmp x0, x1, sxtx #3
+add x0, sp, w1, uxtw #3
+cmp sp, x1
 movk w0, #0x1234
 mov w0, #0x12340000
 mov x0, #-0x1235
@@ -33,24 +61,6 @@ str w0, [x1, w2, uxtw]
 str x0, [x1, w2, sxtw #3]
 ldr w0, [x1, x2, lsl #2]
 ldrh w0, [x1, w2, uxtw #1]
-b #0x94
-bl #0x8c
-b.eq #0x8c
-b.ne #0x94
-b.hs #0xb4
-b.lo #0xd4
-b.vs #0x8c
-b.vc #0x94
-b.mi #0xb4
-b.pl #0xd4
-b.hi #0x8c
-b.ls #0x94
-b.ge #0xb4
-b.lt #0xd4
-b.gt #0x8c
-b.le #0x94
-b.al #0xb4
-b.nv #0xd4
 nop 
 br x16
 blr x16

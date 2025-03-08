@@ -74,6 +74,7 @@ typedef struct _rasBlock {
 char* rasErrorStrings[] = {
     "no error",
     "register size mismatch",
+    "invalid use of zr/sp",
     "immediate out of range",
     "invalid constant operand (shift, extend, etc)",
     "undefined label",

@@ -20,6 +20,7 @@ typedef struct _rasSymbol* rasLabel;
 typedef enum {
     RAS_OK,
     RAS_ERR_BAD_REG_SIZE,
+    RAS_ERR_BAD_R31,
     RAS_ERR_BAD_IMM,
     RAS_ERR_BAD_CONST,
     RAS_ERR_UNDEF_LABEL,
@@ -43,6 +44,7 @@ typedef struct {
 typedef struct {
     u8 amt : 6;
     u8 type : 2;
+    u8 invalid : 1;
 } rasShift;
 
 typedef struct {
@@ -88,10 +90,16 @@ void rasAddPatch(rasBlock* ctx, rasPatchType type, rasLabel l);
 void rasEmitWord(rasBlock* ctx, u32 w);
 void rasEmitDword(rasBlock* ctx, u64 d);
 
+#ifdef RAS_NO_CHECKS
+#define rasAssert(...)
+#endif
+
 #define MASK(b) ((1 << (b)) - 1)
 #define ISNBITSU(n, b) ((u32) (n) >> (b) == 0)
 #define ISNBITSS(n, b) ((s32) (n) >> (b) == 0 || (s32) (n) >> (b) == -1)
 #define ISLOWBITS0(n, b) (((n) & MASK(b)) == 0)
+#define CHECKR31(r, canbesp)                                                   \
+    rasAssert(r.idx != 31 || r.isSp == canbesp, RAS_ERR_BAD_R31)
 
 #define __RAS_EMIT_DECL(name, ...)                                             \
     static inline void rasEmit##name(rasBlock* ctx, __VA_ARGS__)
@@ -103,8 +111,10 @@ __RAS_EMIT_DECL(AbsAddr, rasLabel l) {
 
 __RAS_EMIT_DECL(AddSubImm, u32 op, u32 s, rasShift shift, u32 imm12, rasReg rn,
                 rasReg rd) {
+    CHECKR31(rd, !s);
+    CHECKR31(rn, 1);
     rasAssert(rn.sf == rd.sf, RAS_ERR_BAD_REG_SIZE);
-    rasAssert(shift.type == 0, RAS_ERR_BAD_CONST);
+    rasAssert(shift.type == 0 && !shift.invalid, RAS_ERR_BAD_CONST);
     rasAssert(shift.amt == 0 || shift.amt == 12, RAS_ERR_BAD_CONST);
     rasAssert(ISNBITSU(imm12, 12), RAS_ERR_BAD_IMM);
     u32 sh = shift.amt == 12;
@@ -112,26 +122,38 @@ __RAS_EMIT_DECL(AddSubImm, u32 op, u32 s, rasShift shift, u32 imm12, rasReg rn,
                          op << 30 | rn.sf << 31 | 0x11000000);
 }
 
+__RAS_EMIT_DECL(AddSubExtendedReg, u32 op, u32 s, rasExtend ext, rasReg rm,
+                rasReg rn, rasReg rd) {
+    CHECKR31(rd, !s);
+    CHECKR31(rn, 1);
+    CHECKR31(rm, 0);
+    rasAssert(rd.sf == rn.sf, RAS_ERR_BAD_REG_SIZE);
+    if (!rd.sf) rasAssert(!rm.sf, RAS_ERR_BAD_REG_SIZE);
+    if (!rm.sf) rasAssert((ext.type & 3) != 3, RAS_ERR_BAD_REG_SIZE);
+    rasAssert(ext.amt <= 4 && !ext.invalid, RAS_ERR_BAD_CONST);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | ext.amt << 10 | ext.type << 13 |
+                         rm.idx << 16 | s << 29 | op << 30 | rd.sf << 31 |
+                         0x0b200000);
+}
+
 __RAS_EMIT_DECL(AddSubShiftedReg, u32 op, u32 s, rasShift shift, rasReg rm,
                 rasReg rn, rasReg rd) {
+    if (rd.isSp || rn.isSp) {
+        rasEmitAddSubExtendedReg(ctx, op, s,
+                                 (rasExtend) {shift.amt, rm.sf ? 3 : 2,
+                                              shift.type != 0 || shift.amt > 4},
+                                 rm, rn, rd);
+        return;
+    }
+    CHECKR31(rm, 0);
     rasAssert(rd.sf == rm.sf && rd.sf == rn.sf, RAS_ERR_BAD_REG_SIZE);
     rasEmitWord(ctx, rd.idx | rn.idx << 5 | shift.amt << 10 | rm.idx << 16 |
                          shift.type << 22 | s << 29 | op << 30 | rd.sf << 31 |
                          0x0b000000);
 }
 
-__RAS_EMIT_DECL(AddSubExtendedReg, u32 op, u32 s, rasExtend ext, rasReg rm,
-                rasReg rn, rasReg rd) {
-    rasAssert(rd.sf == rn.sf, RAS_ERR_BAD_REG_SIZE);
-    if (!rd.sf) rasAssert(!rm.sf, RAS_ERR_BAD_REG_SIZE);
-    if (!rm.sf) rasAssert((ext.type & 3) != 3, RAS_ERR_BAD_REG_SIZE);
-    rasAssert(ext.amt <= 4, RAS_ERR_BAD_CONST);
-    rasEmitWord(ctx, rd.idx | rn.idx << 5 | ext.amt << 10 | ext.type << 13 |
-                         rm.idx << 16 | s << 29 | op << 30 | rd.sf << 31 |
-                         0x0b200000);
-}
-
 __RAS_EMIT_DECL(MoveWide, u32 opc, rasShift shift, u32 imm16, rasReg rd) {
+    CHECKR31(rd, 0);
     rasAssert(ISNBITSU(imm16, 16), RAS_ERR_BAD_IMM);
     rasAssert(shift.type == 0, RAS_ERR_BAD_CONST);
     if (rd.sf) {
@@ -151,6 +173,8 @@ __RAS_EMIT_DECL(MoveWide, u32 opc, rasShift shift, u32 imm16, rasReg rd) {
 // opc: 0=store 1=load unsigned 2=load signed
 __RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, rasAddrImm amod,
                 rasReg rt) {
+    CHECKR31(rt, 0);
+    CHECKR31(amod.rn, 1);
     rasAssert(amod.rn.sf, RAS_ERR_BAD_REG_SIZE);
     if (rt.sf) {
         if (size == 2 && opc != 2) size = 3;
@@ -176,6 +200,9 @@ __RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, rasAddrImm amod,
 
 __RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 opc, rasAddrReg amod,
                 rasReg rt) {
+    CHECKR31(rt, 0);
+    CHECKR31(amod.rn, 1);
+    CHECKR31(amod.rm, 0);
     rasAssert(!amod.ext.invalid, RAS_ERR_BAD_CONST);
     rasAssert(amod.rn.sf, RAS_ERR_BAD_REG_SIZE);
     if (rt.sf) {
@@ -203,8 +230,8 @@ __RAS_EMIT_DECL(BranchCondImm, rasLabel lab, u32 o0, u32 cond) {
     rasEmitWord(ctx, cond | o0 << 4 | 0x54000000);
 }
 
-__RAS_EMIT_DECL(BranchReg, u32 opc, u32 op2, u32 op3, rasReg rn,
-                u32 op4) {
+__RAS_EMIT_DECL(BranchReg, u32 opc, u32 op2, u32 op3, rasReg rn, u32 op4) {
+    CHECKR31(rn, 0);
     rasAssert(rn.sf, RAS_ERR_BAD_REG_SIZE);
     rasEmitWord(ctx, op4 | rn.idx << 5 | op3 << 10 | op2 << 16 | opc << 21 |
                          0xd6000000);

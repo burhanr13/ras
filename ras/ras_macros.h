@@ -15,8 +15,6 @@
 #define __VA_IF(t, f, ...) __VA_IF_##__VA_OPT__(1)(__ID(t), f, __VA_ARGS__)
 #define __VA_DFL(dfl, ...) __VA_IF(__ID(__VA_ARGS__), dfl, __VA_ARGS__)
 
-#define __OPTION_SHIFT(...) __VA_DFL(lsl(0), __VA_ARGS__)
-
 // unfortunately generic requires all branches to be well typed
 // solve this by using more generic
 #define __OP_IMM(op) _Generic(op, rasReg: 0, default: op)
@@ -30,7 +28,7 @@
         default: __EMIT(Dword, __OP_IMML(d)))
 
 #define addsub(op, s, rd, rn, op2, ...)                                        \
-    _addsub(op, s, rd, rn, op2, __OPTION_SHIFT(__VA_ARGS__))
+    _addsub(op, s, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
 #define _addsub(op, s, rd, rn, op2, mod)                                       \
     _Generic(op2,                                                              \
         rasReg: _Generic(mod,                                                  \
@@ -47,22 +45,44 @@
 #define sub(rd, rn, op2, ...) addsub(1, 0, rd, rn, op2, __VA_ARGS__)
 #define subs(rd, rn, op2, ...) addsub(1, 1, rd, rn, op2, __VA_ARGS__)
 
+#define cmp(rn, op2, ...) subs(zr(rn), rn, op2, __VA_ARGS__)
+#define cmn(rn, op2, ...) adds(zr(rn), rn, op2, __VA_ARGS__)
+
+#define lsl(s, ...) ((rasShift) {s, 0})
+#define lsr(s, ...) ((rasShift) {s, 1})
+#define asr(s, ...) ((rasShift) {s, 2})
+
+#define extend(type, ...) _extend(type, __VA_DFL(0, __VA_ARGS__))
+#define _extend(type, s, ...) ((rasExtend) {s, type})
+
+#define uxtb(...) extend(0, __VA_ARGS__)
+#define uxth(...) extend(1, __VA_ARGS__)
+#define uxtw(...) extend(2, __VA_ARGS__)
+#define uxtx(...) extend(3, __VA_ARGS__)
+#define sxtb(...) extend(4, __VA_ARGS__)
+#define sxth(...) extend(5, __VA_ARGS__)
+#define sxtw(...) extend(6, __VA_ARGS__)
+#define sxtx(...) extend(7, __VA_ARGS__)
+
 #define movewide(opc, rd, imm, ...)                                            \
-    __EMIT(MoveWide, opc, __OPTION_SHIFT(__VA_ARGS__), imm, rd)
+    __EMIT(MoveWide, opc, __VA_DFL(lsl(0), __VA_ARGS__), imm, rd)
 
 #define movn(rd, imm, ...) movewide(0, rd, imm, __VA_ARGS__)
 #define movz(rd, imm, ...) movewide(2, rd, imm, __VA_ARGS__)
 #define movk(rd, imm, ...) movewide(3, rd, imm, __VA_ARGS__)
 
 #define __EXT_OF_SHIFT(s)                                                      \
-    _Generic(s, rasShift: ((rasExtend) {s.amt, 3, s.type != 0}), rasExtend: s)
+    _Generic(s,                                                                \
+        rasShift: ((rasExtend) {s.amt, 3, s.type != 0 || s.amt > 4}),          \
+        rasExtend: s)
 
 #define ptr(rn, ...) _ptr(rn, __VA_DFL(0, __VA_ARGS__))
 #define _ptr(x, y) __ptr(x, y)
 #define __ptr(rn, off, ...)                                                    \
     _Generic(off,                                                              \
-        rasReg: ((rasAddrReg) {rn, __FORCE(rasReg, off),                       \
-                               __EXT_OF_SHIFT(__OPTION_SHIFT(__VA_ARGS__))}),  \
+        rasReg: ((rasAddrReg) {                                                \
+            rn, __FORCE(rasReg, off),                                          \
+            __EXT_OF_SHIFT(__VA_DFL(lsl(0), __VA_ARGS__))}),                   \
         default: ((rasAddrImm) {rn, 0, __OP_IMM(off)}))
 
 #define post_ptr(rn, off) ((rasAddrImm) {rn, 1, off})
@@ -143,22 +163,6 @@
 #define bhs(l) b(hs, l)
 #define blo(l) b(lo, l)
 
-#define lsl(s, ...) ((rasShift) {s, 0})
-#define lsr(s, ...) ((rasShift) {s, 1})
-#define asr(s, ...) ((rasShift) {s, 2})
-
-#define extend(type, ...) _extend(type, __VA_DFL(0, __VA_ARGS__))
-#define _extend(type, s, ...) ((rasExtend) {s, type})
-
-#define uxtb(...) extend(0, __VA_ARGS__)
-#define uxth(...) extend(1, __VA_ARGS__)
-#define uxtw(...) extend(2, __VA_ARGS__)
-#define uxtx(...) extend(3, __VA_ARGS__)
-#define sxtb(...) extend(4, __VA_ARGS__)
-#define sxth(...) extend(5, __VA_ARGS__)
-#define sxtw(...) extend(6, __VA_ARGS__)
-#define sxtx(...) extend(7, __VA_ARGS__)
-
 #define Label(l, ...) rasLabel l = Lnew(__VA_ARGS__)
 #define Lnew(...) __VA_IF(_Lnewext(__VA_ARGS__), _Lnew(), __VA_ARGS__)
 #define _Lnew() rasDeclareLabel(RAS_CTX_VAR)
@@ -238,6 +242,8 @@
 
 #define xzr ((rasReg) {31, 1, 0})
 #define sp ((rasReg) {31, 1, 1})
+
+#define zr(rn) ((rasReg) {31, rn.sf, 0})
 
 #define fp x29
 #define lr x30
