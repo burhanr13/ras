@@ -1,10 +1,27 @@
-Label(l1); Label(l2); Label(l3);
+Label(l1); Label(l2); Label(l3); Label(l4); Label(l5);
 L(l1);
-b(l3);
+b(l2);
 bl(l1);
-b(l3);
-bl(l1);
+L(l2);
+beq(l1);
+bne(l2);
+bcs(l3);
+bcc(l4);
+bvs(l1);
+bvc(l2);
+bmi(l3);
+bpl(l4);
 L(l3);
+bhi(l1);
+bls(l2);
+bge(l3);
+blt(l4);
+bgt(l1);
+ble(l2);
+bal(l3);
+bnv(l4);
+L(l4);
+
 
 add(w0, w1, 0x123);
 adds(x2, x3, 1, lsl(12));

@@ -1,4 +1,4 @@
-*.dSYM
+
 test_actual.txt
-ras_test/ras_test
-test
+bin
+.clangd

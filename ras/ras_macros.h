@@ -10,11 +10,11 @@
 #define __EMIT(name, ...) rasEmit##name(RAS_CTX_VAR, __VA_ARGS__)
 
 #define __ID(...) __VA_ARGS__
-#define __VA_DFL_(dfl, fun, ...) dfl
-#define __VA_DFL_1(dfl, fun, ...) fun(__VA_ARGS__)
-#define __VA_DFL(dfl, fun, ...) __VA_DFL_##__VA_OPT__(1)(dfl, fun, __VA_ARGS__)
+#define __VA_IF_1(t, f, ...) t
+#define __VA_IF_(t, f, ...) f
+#define __VA_IF(t, f, ...) __VA_IF_##__VA_OPT__(1)(__ID(t), f, __VA_ARGS__)
 
-#define __OPTION_SHIFT(...) __VA_DFL(lsl(0), __ID, __VA_ARGS__)
+#define __OPTION_SHIFT(...) __VA_IF(__ID(__VA_ARGS__), lsl(0), __VA_ARGS__)
 
 // unfortunately generic requires all branches to be well typed
 // solve this by using more generic
@@ -56,8 +56,7 @@
 #define __EXT_OF_SHIFT(s)                                                      \
     _Generic(s, rasShift: ((rasExtend) {s.amt, 3, s.type != 0}), rasExtend: s)
 
-#define ptr(rn, ...) _ptr(rn, __VA_DFL(0, __ID, __VA_ARGS__))
-// need to do this so result of __VA_DFL is not treated as one arg
+#define ptr(rn, ...) _ptr(rn, __VA_IF(__ID(__VA_ARGS__), 0, __VA_ARGS__))
 #define _ptr(x, y) __ptr(x, y)
 #define __ptr(rn, off, ...)                                                    \
     _Generic(off,                                                              \
@@ -86,9 +85,11 @@
 #define ldrsw(rt, amod) loadstore(2, 2, rt, amod)
 
 #define branchuncondimm(op, l) __EMIT(BranchUncondImm, op, l)
+#define branchcondimm(c, o0, l) __EMIT(BranchCondImm, l, o0, c)
 
-#define b(l, ...) branchuncondimm(0, l)
-//__VA_DFL(branchuncondimm(0, l),   __EMIT(BranchCondImm, __VA_ARGS__, 0, l))
+#define b(l, ...)                                                              \
+    __VA_IF(branchcondimm(l, 0, __VA_ARGS__), branchuncondimm(0, l),           \
+            __VA_ARGS__)
 #define bl(l) branchuncondimm(1, l)
 
 #define eq 0
@@ -110,11 +111,31 @@
 #define hs cs
 #define lo cc
 
+#define beq(l) b(eq, l)
+#define bne(l) b(ne, l)
+#define bcs(l) b(cs, l)
+#define bcc(l) b(cc, l)
+#define bmi(l) b(mi, l)
+#define bpl(l) b(pl, l)
+#define bvs(l) b(vs, l)
+#define bvc(l) b(vc, l)
+#define bhi(l) b(hi, l)
+#define bls(l) b(ls, l)
+#define bge(l) b(ge,l)
+#define blt(l) b(lt, l)
+#define bgt(l) b(gt, l)
+#define ble(l) b(le, l)
+#define bal(l) b(al, l)
+#define bnv(l) b(nv, l)
+#define bhs(l) b(hs, l)
+#define blo(l) b(lo, l)
+
 #define lsl(s, ...) ((rasShift) {s, 0})
 #define lsr(s, ...) ((rasShift) {s, 1})
 #define asr(s, ...) ((rasShift) {s, 2})
 
-#define extend(type, ...) _extend(type, __VA_DFL(0, __ID, __VA_ARGS__))
+#define extend(type, ...)                                                      \
+    _extend(type, __VA_IF(__ID(__VA_ARGS__), 0, __VA_ARGS__))
 #define _extend(type, s, ...) ((rasExtend) {s, type})
 
 #define uxtb(...) extend(0, __VA_ARGS__)
@@ -127,7 +148,7 @@
 #define sxtx(...) extend(7, __VA_ARGS__)
 
 #define Label(l, ...) rasLabel l = Lnew(__VA_ARGS__)
-#define Lnew(...) __VA_DFL(_Lnew(), _Lnewext, __VA_ARGS__)
+#define Lnew(...) __VA_IF(_Lnewext(__VA_ARGS__), _Lnew(), __VA_ARGS__)
 #define _Lnew() rasDeclareLabel(RAS_CTX_VAR)
 #define _Lnewext(addr) rasDefineLabelExternal(_Lnew(), addr)
 #define L(l) rasDefineLabel(RAS_CTX_VAR, l)

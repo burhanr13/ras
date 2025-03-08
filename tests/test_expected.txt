@@ -1,7 +1,21 @@
-b #0x10
+b #8
 bl #0
-b #0x10
-bl #0
+b.eq #0
+b.ne #8
+b.hs #0x28
+b.lo #0x48
+b.vs #0
+b.vc #8
+b.mi #0x28
+b.pl #0x48
+b.hi #0
+b.ls #8
+b.ge #0x28
+b.lt #0x48
+b.gt #0
+b.le #8
+b.al #0x28
+b.nv #0x48
 add w0, w1, #0x123
 adds x2, x3, #1, lsl #12
 sub w4, w5, #0xabc
