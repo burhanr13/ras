@@ -13,8 +13,9 @@
 #define __VA_IF_1(t, f, ...) t
 #define __VA_IF_(t, f, ...) f
 #define __VA_IF(t, f, ...) __VA_IF_##__VA_OPT__(1)(__ID(t), f, __VA_ARGS__)
+#define __VA_DFL(dfl, ...) __VA_IF(__ID(__VA_ARGS__), dfl, __VA_ARGS__)
 
-#define __OPTION_SHIFT(...) __VA_IF(__ID(__VA_ARGS__), lsl(0), __VA_ARGS__)
+#define __OPTION_SHIFT(...) __VA_DFL(lsl(0), __VA_ARGS__)
 
 // unfortunately generic requires all branches to be well typed
 // solve this by using more generic
@@ -56,7 +57,7 @@
 #define __EXT_OF_SHIFT(s)                                                      \
     _Generic(s, rasShift: ((rasExtend) {s.amt, 3, s.type != 0}), rasExtend: s)
 
-#define ptr(rn, ...) _ptr(rn, __VA_IF(__ID(__VA_ARGS__), 0, __VA_ARGS__))
+#define ptr(rn, ...) _ptr(rn, __VA_DFL(0, __VA_ARGS__))
 #define _ptr(x, y) __ptr(x, y)
 #define __ptr(rn, off, ...)                                                    \
     _Generic(off,                                                              \
@@ -92,6 +93,18 @@
             __VA_ARGS__)
 #define bl(l) branchuncondimm(1, l)
 
+#define hint(crm, op2) __EMIT(Hint, crm, op2)
+
+#define nop() hint(0, 0)
+
+#define branchreg(opc, op2, op3, op4, rn)                                      \
+    __EMIT(BranchReg, opc, op2, op3, rn, op4)
+
+#define br(rn) branchreg(0, 31, 0, 0, rn)
+#define blr(rn) branchreg(1, 31, 0, 0, rn)
+#define ret(...) _ret(__VA_DFL(lr, __VA_ARGS__))
+#define _ret(rn) branchreg(2, 31, 0, 0, rn)
+
 #define eq 0
 #define ne 1
 #define cs 2
@@ -121,7 +134,7 @@
 #define bvc(l) b(vc, l)
 #define bhi(l) b(hi, l)
 #define bls(l) b(ls, l)
-#define bge(l) b(ge,l)
+#define bge(l) b(ge, l)
 #define blt(l) b(lt, l)
 #define bgt(l) b(gt, l)
 #define ble(l) b(le, l)
@@ -134,8 +147,7 @@
 #define lsr(s, ...) ((rasShift) {s, 1})
 #define asr(s, ...) ((rasShift) {s, 2})
 
-#define extend(type, ...)                                                      \
-    _extend(type, __VA_IF(__ID(__VA_ARGS__), 0, __VA_ARGS__))
+#define extend(type, ...) _extend(type, __VA_DFL(0, __VA_ARGS__))
 #define _extend(type, s, ...) ((rasExtend) {s, type})
 
 #define uxtb(...) extend(0, __VA_ARGS__)
@@ -152,6 +164,7 @@
 #define _Lnew() rasDeclareLabel(RAS_CTX_VAR)
 #define _Lnewext(addr) rasDefineLabelExternal(_Lnew(), addr)
 #define L(l) rasDefineLabel(RAS_CTX_VAR, l)
+#define Lext(l, addr) rasDefineLabelExternal(l, addr)
 
 #define wreg(n) ((rasReg) {n, 0})
 #define xreg(n) ((rasReg) {n, 1})

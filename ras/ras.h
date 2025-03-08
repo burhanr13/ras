@@ -199,9 +199,19 @@ __RAS_EMIT_DECL(BranchUncondImm, u32 op, rasLabel lab) {
 }
 
 __RAS_EMIT_DECL(BranchCondImm, rasLabel lab, u32 o0, u32 cond) {
-    rasAssert(cond < 16, RAS_ERR_BAD_CONST);
     rasAddPatch(ctx, RAS_PATCH_BRANCH19, lab);
     rasEmitWord(ctx, cond | o0 << 4 | 0x54000000);
+}
+
+__RAS_EMIT_DECL(BranchReg, u32 opc, u32 op2, u32 op3, rasReg rn,
+                u32 op4) {
+    rasAssert(rn.sf, RAS_ERR_BAD_REG_SIZE);
+    rasEmitWord(ctx, op4 | rn.idx << 5 | op3 << 10 | op2 << 16 | opc << 21 |
+                         0xd6000000);
+}
+
+__RAS_EMIT_DECL(Hint, u32 crm, u32 op2) {
+    rasEmitWord(ctx, op2 << 5 | crm << 8 | 0xd503201f);
 }
 
 #undef MASK

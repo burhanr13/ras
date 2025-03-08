@@ -31,7 +31,7 @@ int main() {
     add(w0, w1, 0);
     
     ldr(lr, post_ptr(sp, 0x10));
-    word(0xd65f03c0); // ret
+    ret();
 
     rasReady(ctx);
 
