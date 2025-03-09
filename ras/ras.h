@@ -172,6 +172,23 @@ __RAS_EMIT_DECL(LogicalReg, u32 sf, u32 opc, u32 n, rasShift shift, rasReg rm,
                          0x0a000000);
 }
 
+__RAS_EMIT_DECL(DataProc1Source, u32 sf, u32 s, u32 opcode2, u32 opcode,
+                rasReg rn, rasReg rd) {
+    CHECKR31(rd, 0);
+    CHECKR31(rn, 0);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | opcode << 10 | opcode2 << 16 |
+                         s << 29 | sf << 31 | 0x5ac00000);
+}
+
+__RAS_EMIT_DECL(DataProc2Source, u32 sf, u32 s, rasReg rm, u32 opcode,
+                rasReg rn, rasReg rd) {
+    CHECKR31(rd, 0);
+    CHECKR31(rn, 0);
+    CHECKR31(rm, 0);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | opcode << 10 | rm.idx << 16 |
+                         s << 29 | sf << 31 | 0x1ac00000);
+}
+
 __RAS_EMIT_DECL(MoveWide, u32 sf, u32 opc, rasShift shift, u32 imm16,
                 rasReg rd) {
     CHECKR31(rd, 0);
@@ -223,15 +240,12 @@ __RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 opc, rasAddrReg amod,
                          0x38200800);
 }
 
-// opc: 0=load 2=load signed
 __RAS_EMIT_DECL(LoadLiteral, u32 opc, rasLabel l, rasReg rt) {
     CHECKR31(rt, 0);
     rasAddPatch(ctx, RAS_PATCH_REL19, l);
     rasEmitWord(ctx, rt.idx | opc << 30 | 0x18000000);
 }
 
-// why are load/store opcodes encoded differently for each instruction :/
-// 0=size from reg 1=signed word
 __RAS_EMIT_DECL(LoadStorePair, u32 opc, u32 l, rasAddrImm amod, rasReg rt2,
                 rasReg rt) {
     CHECKR31(rt, 0);

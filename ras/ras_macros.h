@@ -99,6 +99,37 @@ extern void* _ras_invalid_argument_type;
 #define mvnx(rn, rm) ornx(rn, zr, rm)
 #define tstx(rn, op2, ...) andsx(zr, rn, op2, __VA_ARGS__)
 
+#define dataproc1source(sf, s, opcode2, opcode, rd, rn)                        \
+    __EMIT(DataProc1Source, sf, s, opcode2, opcode, rn, rd)
+
+#define rbit(rd, rn) dataproc1source(0, 0, 0, 0, rd, rn)
+#define rev16(rd, rn) dataproc1source(0, 0, 0, 1, rd, rn)
+#define rev(rd, rn) dataproc1source(0, 0, 0, 2, rd, rn)
+#define clz(rd, rn) dataproc1source(0, 0, 0, 4, rd, rn)
+#define cls(rd, rn) dataproc1source(0, 0, 0, 5, rd, rn)
+#define rbitx(rd, rn) dataproc1source(1, 0, 0, 0, rd, rn)
+#define rev16x(rd, rn) dataproc1source(1, 0, 0, 1, rd, rn)
+#define rev32x(rd, rn) dataproc1source(1, 0, 0, 2, rd, rn)
+#define revx(rd, rn) dataproc1source(1, 0, 0, 3, rd, rn)
+#define clzx(rd, rn) dataproc1source(1, 0, 0, 4, rd, rn)
+#define clsx(rd, rn) dataproc1source(1, 0, 0, 5, rd, rn)
+
+#define dataproc2source(sf, s, opcode, rd, rn, rm)                             \
+    __EMIT(DataProc2Source, sf, s, rm, opcode, rn, rd)
+
+#define udiv(rd, rn, rm) dataproc2source(0, 0, 2, rd, rn, rm)
+#define sdiv(rd, rn, rm) dataproc2source(0, 0, 3, rd, rn, rm)
+#define lslv(rd, rn, rm) dataproc2source(0, 0, 8, rd, rn, rm)
+#define lsrv(rd, rn, rm) dataproc2source(0, 0, 9, rd, rn, rm)
+#define asrv(rd, rn, rm) dataproc2source(0, 0, 10, rd, rn, rm)
+#define rorv(rd, rn, rm) dataproc2source(0, 0, 11, rd, rn, rm)
+#define udivx(rd, rn, rm) dataproc2source(1, 0, 2, rd, rn, rm)
+#define sdivx(rd, rn, rm) dataproc2source(1, 0, 3, rd, rn, rm)
+#define lslvx(rd, rn, rm) dataproc2source(1, 0, 8, rd, rn, rm)
+#define lsrvx(rd, rn, rm) dataproc2source(1, 0, 9, rd, rn, rm)
+#define asrvx(rd, rn, rm) dataproc2source(1, 0, 10, rd, rn, rm)
+#define rorvx(rd, rn, rm) dataproc2source(1, 0, 11, rd, rn, rm)
+
 #define lsl(s, ...) ((rasShift) {s, 0})
 #define lsr(s, ...) ((rasShift) {s, 1})
 #define asr(s, ...) ((rasShift) {s, 2})
@@ -133,7 +164,7 @@ extern void* _ras_invalid_argument_type;
     ((rd).isSp || (rm).isSp ? add(rd, rm, 0) : orr(rd, zr, rm))
 #define movx(rd, op2)                                                          \
     _Generic(op2,                                                              \
-        rasReg: _movregx(rd, __FORCE(rasReg, op2)),                             \
+        rasReg: _movregx(rd, __FORCE(rasReg, op2)),                            \
         default: __EMIT(PseudoMovImm, 1, rd, __OP_IMM(op2)))
 #define _movregx(rd, rm)                                                       \
     ((rd).isSp || (rm).isSp ? addx(rd, rm, 0) : orrx(rd, zr, rm))
@@ -187,7 +218,7 @@ extern void* _ras_invalid_argument_type;
     _Generic(amod,                                                             \
         rasLabel: loadliteral(1, rt, __FORCE(rasLabel, amod)),                 \
         default: _ldrx(rt, amod))
-#define ldrswx(rt, amod)                                                        \
+#define ldrswx(rt, amod)                                                       \
     _Generic(amod,                                                             \
         rasLabel: loadliteral(2, rt, __FORCE(rasLabel, amod)),                 \
         default: _ldrswx(rt, amod))

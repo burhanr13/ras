@@ -78,6 +78,29 @@ and w0, w1, w2
 mov w2, #0xd0f0
 movk w2, #0xabc, lsl #16
 orr w0, w1, w2
+rbit w0, w1
+rbit x0, x1
+rev w0, w1
+rev x0, x1
+rev16 w0, w1
+rev16 x0, x1
+rev32 x0, x1
+clz w0, w1
+clz x0, x1
+cls w0, w1
+cls x0, x1
+udiv w0, w1, w2
+sdiv w0, w1, w2
+lsl w0, w1, w2
+lsr w0, w1, w2
+asr w0, w1, w2
+ror w0, w1, w2
+udiv x0, x1, x2
+sdiv x0, x1, x2
+lsl x0, x1, x2
+lsr x0, x1, x2
+asr x0, x1, x2
+ror x0, x1, x2
 movk w0, #0x1234
 mov w0, #0x12340000
 mov x0, #-0x1235
@@ -113,9 +136,11 @@ mov x0, sp
 strb w0, [x1, x2]
 ldurb w0, [x1, #0x10]
 ldursb w0, [x1, #-0x10]
+ldrsb x0, [x1, #0xff]!
 strh w0, [x1, #0x1ffe]
 ldrh w0, [x1, #0x20]!
 ldrsh w0, [x1], #0xffffffffffffffe0
+ldrsh x0, [x1], #0xffffffffffffff00
 ldr w0, [x1, #0x3ffc]
 ldrsw x0, [x1, x2, sxtx]
 ldr x0, [x1, #0x7ff8]
