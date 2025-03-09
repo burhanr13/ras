@@ -44,7 +44,6 @@ typedef struct {
 typedef struct {
     u8 amt : 6;
     u8 type : 2;
-    u8 invalid : 1;
 } rasShift;
 
 typedef struct {
@@ -119,7 +118,7 @@ __RAS_EMIT_DECL(AddSubImm, u32 op, u32 s, rasShift shift, u32 imm12, rasReg rn,
     CHECKR31(rd, !s);
     CHECKR31(rn, 1);
     rasAssert(rn.sf == rd.sf, RAS_ERR_BAD_REG_SIZE);
-    rasAssert(shift.type == 0 && !shift.invalid, RAS_ERR_BAD_CONST);
+    rasAssert(shift.type == 0, RAS_ERR_BAD_CONST);
     rasAssert(shift.amt == 0 || shift.amt == 12, RAS_ERR_BAD_CONST);
     rasAssert(ISNBITSU(imm12, 12), RAS_ERR_BAD_IMM);
     u32 sh = shift.amt == 12;

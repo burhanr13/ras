@@ -17,17 +17,24 @@
 
 // unfortunately generic requires all branches to be well typed
 // solve this by using more generic
-#define __OP_IMM(op) _Generic(op, rasReg: 0, default: op)
-#define __OP_IMML(op) _Generic(op, rasLabel: 0, default: op)
-#define __FORCEWITH(type, val, dfl) _Generic(val, type: val, default: dfl)
-#define __FORCE(type, val) __FORCEWITH(type, val, (type) {0})
+// this solution using an undefined symbol is from
+// https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
+extern void* _ras_invalid_argument_type;
+#define __OP_IMM(op)                                                           \
+    _Generic(op,                                                               \
+        rasReg: *(int*) _ras_invalid_argument_type,                            \
+        rasLabel: *(int*) _ras_invalid_argument_type,                          \
+        default: op)
+#define __FORCE(type, val)                                                     \
+    _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
+
 #define __CINV(n, v) ((n) ? ~(v) : (v))
 
 #define word(w) __EMIT(Word, w)
 #define dword(d)                                                               \
     _Generic(d,                                                                \
         rasLabel: __EMIT(AbsAddr, __FORCE(rasLabel, d)),                       \
-        default: __EMIT(Dword, __OP_IMML(d)))
+        default: __EMIT(Dword, __OP_IMM(d)))
 
 #define addsub(op, s, rd, rn, op2, ...)                                        \
     _addsub(op, s, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
@@ -36,16 +43,12 @@
         rasReg: _Generic(mod,                                                  \
             rasShift: __EMIT(AddSubShiftedReg, op, s, __FORCE(rasShift, mod),  \
                              __FORCE(rasReg, op2), rn, rd),                    \
-            default: __EMIT(AddSubExtendedReg, op, s,                          \
-                            __FORCEWITH(rasExtend, mod,                        \
-                                        (rasExtend) {.invalid = 1}),           \
+            default: __EMIT(AddSubExtendedReg, op, s, __FORCE(rasExtend, mod), \
                             __FORCE(rasReg, op2), rn, rd)),                    \
         default: _Generic(mod,                                                 \
             rasReg: __EMIT(PseudoAddSubImm, op, s, rd, rn, __OP_IMM(op2),      \
                            __FORCE(rasReg, mod)),                              \
-            default: __EMIT(AddSubImm, op, s,                                  \
-                            __FORCEWITH(rasShift, mod,                         \
-                                        (rasShift) {.invalid = 1}),            \
+            default: __EMIT(AddSubImm, op, s, __FORCE(rasShift, mod),          \
                             __OP_IMM(op2), rn, rd)))
 
 #define add(rd, rn, op2, ...) addsub(0, 0, rd, rn, op2, __VA_ARGS__)
