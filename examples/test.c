@@ -16,19 +16,19 @@ int main() {
 
     push(fp, lr);
 
-    movz(w1, 0);
+    movz(r1, 0);
 
     L(lloop);
-    cmp(w0, 0);
+    cmp(r0, 0);
     beq(lend);
 
-    add(w1, w1, w0);
-    sub(w0, w0, 1);
+    add(r1, r1, r0);
+    sub(r0, r0, 1);
 
     b(lloop);
     L(lend);
 
-    add(w0, w1, 0);
+    add(r0, r1, 0);
 
     pop(fp, lr);
     ret();

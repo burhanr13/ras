@@ -72,6 +72,7 @@ orr x0, x1, #0xffff0000ffff00
 eor w0, w1, #0xff00ff
 ands w0, w1, #0xffff7fff
 tst x0, #0xfff800
+and sp, x0, #0xfffffffffffffff0
 mov w2, #-0x30000000
 and w0, w1, w2
 mov w2, #0xd0f0
@@ -89,6 +90,7 @@ mov w0, #-1
 mov x0, #-1
 mov w0, #0x80
 mov w0, #-0x80
+mov w0, #-0x33333334
 mov x0, #0x800
 mov x0, #-0x800
 mov w0, #0x5678
@@ -104,6 +106,7 @@ movk x0, #0x12, lsl #48
 mov x0, #-0x5433
 movk x0, #0xff, lsl #48
 mov x0, #-0x5433
+mov w0, w1
 mov x0, x1
 mov sp, x0
 mov x0, sp

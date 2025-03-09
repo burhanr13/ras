@@ -75,14 +75,13 @@ typedef struct _rasBlock {
 
 } rasBlock;
 
-char* rasErrorStrings[] = {
-    "no error",
-    "register size mismatch",
-    "invalid use of zr/sp",
-    "immediate out of range",
-    "invalid constant operand (shift, extend, etc)",
-    "undefined label",
-    "label out of range or misaligned",
+char* rasErrorStrings[RAS_ERR_MAX] = {
+    [RAS_OK] = "no error",
+    [RAS_ERR_BAD_R31] = "invalid use of zr/sp",
+    [RAS_ERR_BAD_IMM] = "immediate out of range",
+    [RAS_ERR_BAD_CONST] = "invalid constant operand (shift, extend, etc)",
+    [RAS_ERR_UNDEF_LABEL] = "undefined label",
+    [RAS_ERR_BAD_LABEL] = "label out of range or misaligned",
 };
 
 rasErrorCallback errorCallback = NULL;
@@ -344,48 +343,71 @@ int rasGenerateLogicalImm(u64 imm, u32 sf, u32* immr, u32* imms, u32* n) {
     return true;
 }
 
-void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 op, u32 s, rasReg rd, rasReg rn,
-                            u64 imm, rasReg rtmp) {
+void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
+                            rasReg rn, u64 imm, rasReg rtmp) {
     if (ISNBITSU(imm, 12)) {
-        addsub(op, s, rd, rn, imm);
+        addsub(sf, op, s, rd, rn, imm);
     } else if (ISNBITSU(imm, 24) && ISLOWBITS0(imm, 12)) {
-        addsub(op, s, rd, rn, imm >> 12, lsl(12));
+        addsub(sf, op, s, rd, rn, imm >> 12, lsl(12));
     } else {
         imm = -imm;
         if (ISNBITSU(imm, 12)) {
-            addsub(!op, s, rd, rn, imm);
+            addsub(sf, !op, s, rd, rn, imm);
         } else if (ISNBITSU(imm, 24) && ISLOWBITS0(imm, 12)) {
-            addsub(!op, s, rd, rn, imm >> 12, lsl(12));
+            addsub(sf, !op, s, rd, rn, imm >> 12, lsl(12));
         } else {
             imm = -imm;
             mov(rtmp, imm);
-            addsub(op, s, rd, rn, rtmp);
+            addsub(sf, op, s, rd, rn, rtmp);
         }
     }
 }
 
-void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 opc, rasReg rd, rasReg rn,
-                             u64 imm, rasReg rtmp) {
+void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 sf, u32 opc, rasReg rd,
+                             rasReg rn, u64 imm, rasReg rtmp) {
     u32 immr, imms, n;
-    if (rasGenerateLogicalImm(imm, rd.sf, &immr, &imms, &n)) {
-        logical(opc, 0, rd, rn, imm);
+    if (rasGenerateLogicalImm(imm, sf, &immr, &imms, &n)) {
+        logical(sf, opc, 0, rd, rn, imm);
     } else {
         mov(rtmp, imm);
-        logical(opc, 0, rd, rn, rtmp);
+        logical(sf, opc, 0, rd, rn, rtmp);
     }
 }
 
-void rasEmitPseudoMovImm(rasBlock* ctx, rasReg rd, u64 imm) {
+void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
+    if (imm == 0) {
+        if (sf) {
+            movzx(rd, 0);
+        } else {
+            movz(rd, 0);
+        }
+        return;
+    } else if (imm == ~0u && !sf) {
+        movn(rd, 0);
+        return;
+    } else if (imm == ~0ull) {
+        if (sf) {
+            movnx(rd, 0);
+        } else {
+            movn(rd, 0);
+        }
+        return;
+    }
+
     u32 immr, imms, n;
-    if (rasGenerateLogicalImm(imm, rd.sf, &immr, &imms, &n)) {
-        orr(rd, zr(rd.sf), imm);
+    if (rasGenerateLogicalImm(imm, sf, &immr, &imms, &n)) {
+        if (sf) {
+            orrx(rd, zr, imm);
+        } else {
+            orr(rd, zr, imm);
+        }
         return;
     }
 
     int hw0s = 0;
     int hw1s = 0;
 
-    int sz = rd.sf ? 4 : 2;
+    int sz = sf ? 4 : 2;
 
     for (int i = 0; i < sz; i++) {
         u16 hw = imm >> 16 * i;
@@ -399,23 +421,19 @@ void rasEmitPseudoMovImm(rasBlock* ctx, rasReg rd, u64 imm) {
     for (int i = 0; i < sz; i++) {
         u16 hw = imm >> 16 * i;
         if (hw != (neg ? MASK(16) : 0)) {
+            u32 opc;
             if (initial) {
                 initial = false;
                 if (neg) {
-                    movn(rd, hw ^ MASK(16), lsl(16 * i));
+                    opc = 0;
+                    hw ^= MASK(16);
                 } else {
-                    movz(rd, hw, lsl(16 * i));
+                    opc = 2;
                 }
             } else {
-                movk(rd, hw, lsl(16 * i));
+                opc = 3;
             }
-        }
-    }
-    if (initial) {
-        if (neg) {
-            movn(rd, 0);
-        } else {
-            movz(rd, 0);
+            movewide(sf, opc, rd, hw, lsl(16 * i));
         }
     }
 }
