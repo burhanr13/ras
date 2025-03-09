@@ -14,7 +14,7 @@ int main() {
     Label(lend);
     Label(lloop);
 
-    str(lr, pre_ptr(sp, -0x10));
+    push(fp, lr);
 
     movz(w1, 0);
 
@@ -29,8 +29,8 @@ int main() {
     L(lend);
 
     add(w0, w1, 0);
-    
-    ldr(lr, post_ptr(sp, 0x10));
+
+    pop(fp, lr);
     ret();
 
     rasReady(ctx);

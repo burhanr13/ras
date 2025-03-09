@@ -21,6 +21,10 @@ ble(l2);
 bal(l3);
 bnv(l4);
 L(l4);
+ldr(w0, l5);
+ldr(x0, l1);
+ldrsw(x0, l2);
+L(l5);
 
 add(w0, w1, 0x123);
 adds(x2, x3, 1, lsl(12));
@@ -120,6 +124,14 @@ str(w0, ptr(x1, w2, uxtw()));
 str(x0, ptr(x1, w2, sxtw(3)));
 ldr(w0, ptr(x1, x2, lsl(2)));
 ldrh(w0, ptr(x1, w2, uxtw(1)));
+
+ldp(w0, w1, ptr(x2));
+stp(w0, w1, ptr(x2, 4));
+ldpsw(x0, x1, pre_ptr(x2, 0x80));
+ldp(x0, x1, post_ptr(x2, -0x40));
+stp(x0, x1, ptr(x2, -0x1f8));
+push(fp, lr);
+pop(fp, lr);
 
 nop();
 

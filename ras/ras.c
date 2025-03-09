@@ -11,7 +11,8 @@
 #define BIT(b) (1ull << (b))
 #define MASK(b) (BIT(b) - 1)
 #define ISNBITSU(n, b) ((u32) (n) >> (b) == 0)
-#define ISNBITSS(n, b) ((s32) (n) >> (b) == 0 || (s32) (n) >> (b) == -1)
+#define ISNBITSS(n, b)                                                         \
+    ((s32) (n) >> ((b) - 1) == 0 || (s32) (n) >> ((b) - 1) == -1)
 #define ISLOWBITS0(n, b) (((n) & MASK(b)) == 0)
 
 typedef enum {
@@ -197,11 +198,11 @@ void rasApplyPatch(rasBlock* ctx, rasPatch p) {
     u32* patchinst = patchaddr;
 
     switch (p.type) {
-        case RAS_PATCH_ABSADDR: {
+        case RAS_PATCH_ABS64: {
             *(void**) patchaddr = symaddr;
             break;
         }
-        case RAS_PATCH_BRANCH26: {
+        case RAS_PATCH_REL26: {
             rasAssert(ISLOWBITS0(reladdr, 2), RAS_ERR_BAD_LABEL);
             reladdr >>= 2;
             rasAssert(ISNBITSS(reladdr, 26), RAS_ERR_BAD_LABEL);
@@ -209,7 +210,7 @@ void rasApplyPatch(rasBlock* ctx, rasPatch p) {
             *patchinst |= reladdr;
             break;
         }
-        case RAS_PATCH_BRANCH19: {
+        case RAS_PATCH_REL19: {
             rasAssert(ISLOWBITS0(reladdr, 2), RAS_ERR_BAD_LABEL);
             reladdr >>= 2;
             rasAssert(ISNBITSS(reladdr, 19), RAS_ERR_BAD_LABEL);

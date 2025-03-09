@@ -28,9 +28,9 @@ typedef enum {
 } rasError;
 
 typedef enum {
-    RAS_PATCH_ABSADDR,
-    RAS_PATCH_BRANCH26,
-    RAS_PATCH_BRANCH19,
+    RAS_PATCH_ABS64,
+    RAS_PATCH_REL26,
+    RAS_PATCH_REL19,
 } rasPatchType;
 
 extern char* rasErrorStrings[];
@@ -56,7 +56,10 @@ typedef struct {
 typedef struct {
     rasReg rn;
     u16 mode : 2;
-    u32 imm;
+    union {
+        u32 imm;
+        s32 simm;
+    };
 } rasAddrImm;
 
 typedef struct {
@@ -97,7 +100,8 @@ void rasEmitDword(rasBlock* ctx, u64 d);
 
 #define MASK(b) ((1 << (b)) - 1)
 #define ISNBITSU(n, b) ((u32) (n) >> (b) == 0)
-#define ISNBITSS(n, b) ((s32) (n) >> (b) == 0 || (s32) (n) >> (b) == -1)
+#define ISNBITSS(n, b)                                                         \
+    ((s32) (n) >> ((b) - 1) == 0 || (s32) (n) >> ((b) - 1) == -1)
 #define ISLOWBITS0(n, b) (((n) & MASK(b)) == 0)
 #define CHECKR31(r, canbesp)                                                   \
     rasAssert(r.idx != 31 || r.isSp == (canbesp), RAS_ERR_BAD_R31)
@@ -106,7 +110,7 @@ void rasEmitDword(rasBlock* ctx, u64 d);
     static inline void rasEmit##name(rasBlock* ctx, __VA_ARGS__)
 
 __RAS_EMIT_DECL(AbsAddr, rasLabel l) {
-    rasAddPatch(ctx, RAS_PATCH_ABSADDR, l);
+    rasAddPatch(ctx, RAS_PATCH_ABS64, l);
     rasEmitDword(ctx, 0);
 }
 
@@ -244,13 +248,50 @@ __RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 opc, rasAddrReg amod,
                          0x38200800);
 }
 
+// opc: 0=load 2=load signed
+__RAS_EMIT_DECL(LoadLiteral, u32 opc, rasLabel l, rasReg rt) {
+    CHECKR31(rt, 0);
+    if (rt.sf) {
+        if (opc == 0) opc = 1;
+    } else {
+        rasAssert(opc != 2, RAS_ERR_BAD_REG_SIZE);
+    }
+    rasAddPatch(ctx, RAS_PATCH_REL19, l);
+    rasEmitWord(ctx, rt.idx | opc << 30 | 0x18000000);
+}
+
+// why are load/store opcodes encoded differently for each instruction :/
+// 0=size from reg 1=signed word
+__RAS_EMIT_DECL(LoadStorePair, u32 opc, u32 l, rasAddrImm amod, rasReg rt2,
+                rasReg rt) {
+    CHECKR31(rt, 0);
+    CHECKR31(rt2, 0);
+    CHECKR31(amod.rn, 1);
+    rasAssert(amod.rn.sf, RAS_ERR_BAD_REG_SIZE);
+    rasAssert(rt.sf == rt2.sf, RAS_ERR_BAD_REG_SIZE);
+    if (rt.sf) {
+        if (opc == 0) opc = 2;
+    } else {
+        rasAssert(opc != 1, RAS_ERR_BAD_REG_SIZE);
+    }
+    if (amod.mode == 0) amod.mode = 2;
+    u32 size = (opc & 2) ? 3 : 2;
+    rasAssert(ISLOWBITS0(amod.imm, size), RAS_ERR_BAD_IMM);
+    amod.simm >>= size;
+    rasAssert(ISNBITSS(amod.imm, 7), RAS_ERR_BAD_IMM);
+    amod.imm &= MASK(7);
+    rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | rt2.idx << 10 |
+                         amod.imm << 15 | l << 22 | amod.mode << 23 |
+                         opc << 30 | 0x28000000);
+}
+
 __RAS_EMIT_DECL(BranchUncondImm, u32 op, rasLabel lab) {
-    rasAddPatch(ctx, RAS_PATCH_BRANCH26, lab);
+    rasAddPatch(ctx, RAS_PATCH_REL26, lab);
     rasEmitWord(ctx, op << 31 | 0x14000000);
 }
 
 __RAS_EMIT_DECL(BranchCondImm, rasLabel lab, u32 o0, u32 cond) {
-    rasAddPatch(ctx, RAS_PATCH_BRANCH19, lab);
+    rasAddPatch(ctx, RAS_PATCH_REL19, lab);
     rasEmitWord(ctx, cond | o0 << 4 | 0x54000000);
 }
 

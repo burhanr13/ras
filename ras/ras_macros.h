@@ -119,17 +119,19 @@
         rasReg: ((rasAddrReg) {                                                \
             rn, __FORCE(rasReg, off),                                          \
             __EXT_OF_SHIFT(__VA_DFL(lsl(0), __VA_ARGS__))}),                   \
-        default: ((rasAddrImm) {rn, 0, __OP_IMM(off)}))
+        default: ((rasAddrImm) {rn, 0, {__OP_IMM(off)}}))
 
-#define post_ptr(rn, off) ((rasAddrImm) {rn, 1, off})
-#define pre_ptr(rn, off) ((rasAddrImm) {rn, 3, off})
+#define post_ptr(rn, off) ((rasAddrImm) {rn, 1, {off}})
+#define pre_ptr(rn, off) ((rasAddrImm) {rn, 3, {off}})
 
 #define loadstore(size, opc, rt, amod)                                         \
     _Generic(amod,                                                             \
         rasAddrReg: __EMIT(LoadStoreRegOff, size, opc,                         \
                            __FORCE(rasAddrReg, amod), rt),                     \
         rasAddrImm: __EMIT(LoadStoreImmOff, size, opc,                         \
-                           __FORCE(rasAddrImm, amod), rt))
+                           __FORCE(rasAddrImm, amod), rt),                     \
+        rasLabel: (void) 0)
+#define loadliteral(opc, rt, l) __EMIT(LoadLiteral, opc, l, rt)
 
 #define strb(rt, amod) loadstore(0, 0, rt, amod)
 #define ldrb(rt, amod) loadstore(0, 1, rt, amod)
@@ -138,8 +140,23 @@
 #define ldrh(rt, amod) loadstore(1, 1, rt, amod)
 #define ldrsh(rt, amod) loadstore(1, 2, rt, amod)
 #define str(rt, amod) loadstore(2, 0, rt, amod)
-#define ldr(rt, amod) loadstore(2, 1, rt, amod)
-#define ldrsw(rt, amod) loadstore(2, 2, rt, amod)
+#define ldr(rt, amod)                                                          \
+    _Generic(amod,                                                             \
+        rasLabel: loadliteral(0, rt, __FORCE(rasLabel, amod)),                 \
+        default: loadstore(2, 1, rt, amod))
+#define ldrsw(rt, amod)                                                        \
+    _Generic(amod,                                                             \
+        rasLabel: loadliteral(2, rt, __FORCE(rasLabel, amod)),                 \
+        default: loadstore(2, 2, rt, amod))
+
+#define loadstorepair(opc, l, rt, rt2, amod)                                   \
+    __EMIT(LoadStorePair, opc, l, amod, rt2, rt)
+
+#define stp(rt, rt2, amod) loadstorepair(0, 0, rt, rt2, amod)
+#define ldp(rt, rt2, amod) loadstorepair(0, 1, rt, rt2, amod)
+#define ldpsw(rt, rt2, amod) loadstorepair(1, 1, rt, rt2, amod)
+#define push(rt, rt2) stp(rt, rt2, pre_ptr(sp, -0x10))
+#define pop(rt, rt2) ldp(rt, rt2, post_ptr(sp, 0x10))
 
 #define branchuncondimm(op, l) __EMIT(BranchUncondImm, op, l)
 #define branchcondimm(c, o0, l) __EMIT(BranchCondImm, l, o0, c)

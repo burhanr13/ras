@@ -16,6 +16,9 @@ b.gt #0
 b.le #8
 b.al #0x28
 b.nv #0x48
+ldr w0, #0x54
+ldr x0, #0
+ldrsw x0, #8
 add w0, w1, #0x123
 adds x2, x3, #1, lsl #12
 sub w4, w5, #0xabc
@@ -117,6 +120,13 @@ str w0, [x1, w2, uxtw]
 str x0, [x1, w2, sxtw #3]
 ldr w0, [x1, x2, lsl #2]
 ldrh w0, [x1, w2, uxtw #1]
+ldp w0, w1, [x2]
+stp w0, w1, [x2, #4]
+ldpsw x0, x1, [x2, #0x80]!
+ldp x0, x1, [x2], #-0x40
+stp x0, x1, [x2, #-0x1f8]
+stp x29, x30, [sp, #-0x10]!
+ldp x29, x30, [sp], #0x10
 nop 
 br x16
 blr x16
