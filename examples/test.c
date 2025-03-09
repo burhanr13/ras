@@ -19,7 +19,7 @@ int main() {
     movz(w1, 0);
 
     L(lloop);
-    subs(wzr, w0, 0);
+    cmp(w0, 0);
     beq(lend);
 
     add(w1, w1, w0);

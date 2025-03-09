@@ -42,12 +42,68 @@ cmp w0, w1, asr #5
 cmp x0, x1, sxtx #3
 add x0, sp, w1, uxtw #3
 cmp sp, x1
+cmp x0, #0
+cmp w0, #0x64
+sub w0, w1, #1
+sub w0, w1, #0xccc, lsl #12
+cmn w0, #0xccc, lsl #12
+mov w2, #0x5678
+movk w2, #0x1234, lsl #16
+adds w0, w1, w2
+and w0, w1, w2
+bic x0, x1, x2, lsl #10
+orr w0, w1, w2, lsr #10
+orn w0, w1, w2, asr #10
+eor x0, x1, x2
+eon x0, x1, x2, asr #50
+ands w0, w1, w2, lsl #20
+bics x0, x1, x2, lsr #40
+tst w0, w1
+and w0, w1, #1
+orr x0, x1, #0xffffffff
+eor w0, w1, #0xcccccccc
+ands w0, w1, #0xdfdfdfdf
+tst x0, #-0x380038003800381
+and w0, w1, #0xfffff000
+orr x0, x1, #0xffff0000ffff00
+eor w0, w1, #0xff00ff
+ands w0, w1, #0xffff7fff
+tst x0, #0xfff800
+mov w2, #-0x30000000
+and w0, w1, w2
+mov w2, #0xd0f0
+movk w2, #0xabc, lsl #16
+orr w0, w1, w2
 movk w0, #0x1234
 mov w0, #0x12340000
 mov x0, #-0x1235
 movk x0, #0x1234, lsl #16
 mov x0, #0x123400000000
 mov x0, #-0x1234000000000001
+mov w0, #0
+mov x0, #0
+mov w0, #-1
+mov x0, #-1
+mov w0, #0x80
+mov w0, #-0x80
+mov x0, #0x800
+mov x0, #-0x800
+mov w0, #0x5678
+movk w0, #0x1234, lsl #16
+mov w0, #0xabcd
+mov w0, #-0x54330000
+mov w0, #-0x5433
+mov x0, #-0x64
+mov x0, #0xcdef
+movk x0, #0x78ab, lsl #16
+movk x0, #0x3456, lsl #32
+movk x0, #0x12, lsl #48
+mov x0, #-0x5433
+movk x0, #0xff, lsl #48
+mov x0, #-0x5433
+mov x0, x1
+mov sp, x0
+mov x0, sp
 strb w0, [x1, x2]
 ldurb w0, [x1, #0x10]
 ldursb w0, [x1, #-0x10]

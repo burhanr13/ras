@@ -48,6 +48,37 @@ cmp(w0, w1, asr(5));
 cmp(x0, x1, sxtx(3));
 add(x0, sp, w1, lsl(3));
 cmp(sp, x1);
+cmp(x0, 0);
+cmp(w0, 100);
+
+add(w0, w1, -1, w2);
+sub(w0, w1, 0xccc000, w2);
+cmp(w0, -0xccc000, w2);
+adds(w0, w1, 0x12345678, w2);
+
+and(w0, w1, w2);
+bic(x0, x1, x2, lsl(10));
+orr(w0, w1, w2, lsr(10));
+orn(w0, w1, w2, asr(10));
+eor(x0, x1, x2);
+eon(x0, x1, x2, asr(50));
+ands(w0, w1, w2, lsl(20));
+bics(x0, x1, x2, lsr(40));
+tst(w0, w1);
+
+and(w0, w1, 1);
+orr(x0, x1, 0xffffffff);
+eor(w0, w1, 0xcccccccc);
+ands(w0, w1, 0xdfdfdfdf);
+tst(x0, 0xfc7ffc7ffc7ffc7f);
+bic(w0, w1, 0xfff);
+orn(x0, x1, 0xff0000ffff0000ff);
+eon(w0, w1, 0xff00ff00);
+bics(w0, w1, 0x8000);
+tst(x0, 0xfff800);
+
+and(w0, w1, 0xd0000000, w2);
+orr(w0, w1, 0xabcd0f0, w2);
 
 movk(w0, 0x1234);
 movz(w0, 0x1234, lsl(16));
@@ -55,6 +86,26 @@ movn(x0, 0x1234, lsl(0));
 movk(x0, 0x1234, lsl(16));
 movz(x0, 0x1234, lsl(32));
 movn(x0, 0x1234, lsl(48));
+
+mov(w0, 0);
+mov(x0, 0);
+mov(w0, -1);
+mov(x0, -1);
+mov(w0, 128);
+mov(w0, -128);
+mov(x0, 2048);
+mov(x0, -2048);
+mov(w0, 0x12345678);
+mov(w0, 0x0000abcd);
+mov(w0, 0xabcd0000);
+mov(w0, 0xffffabcd);
+mov(x0, -100);
+mov(x0, 0x12345678abcdef);
+mov(x0, 0xffffffffffabcd);
+mov(x0, 0xffffffffffffabcd);
+mov(x0, x1);
+mov(sp, x0);
+mov(x0, sp);
 
 strb(w0, ptr(x1, x2));
 ldrb(w0, ptr(x1, 16));

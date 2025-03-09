@@ -18,8 +18,10 @@
 // unfortunately generic requires all branches to be well typed
 // solve this by using more generic
 #define __OP_IMM(op) _Generic(op, rasReg: 0, default: op)
-#define __FORCE(type, val) _Generic(val, type: val, default: (type) {0})
 #define __OP_IMML(op) _Generic(op, rasLabel: 0, default: op)
+#define __FORCEWITH(type, val, dfl) _Generic(val, type: val, default: dfl)
+#define __FORCE(type, val) __FORCEWITH(type, val, (type) {0})
+#define __CINV(n, v) ((n) ? ~(v) : (v))
 
 #define word(w) __EMIT(Word, w)
 #define dword(d)                                                               \
@@ -34,19 +36,46 @@
         rasReg: _Generic(mod,                                                  \
             rasShift: __EMIT(AddSubShiftedReg, op, s, __FORCE(rasShift, mod),  \
                              __FORCE(rasReg, op2), rn, rd),                    \
-            rasExtend: __EMIT(AddSubExtendedReg, op, s,                        \
-                              __FORCE(rasExtend, mod), __FORCE(rasReg, op2),   \
-                              rn, rd)),                                        \
-        default: __EMIT(AddSubImm, op, s, __FORCE(rasShift, mod),              \
-                        __OP_IMM(op2), rn, rd))
+            default: __EMIT(AddSubExtendedReg, op, s,                          \
+                            __FORCEWITH(rasExtend, mod,                        \
+                                        (rasExtend) {.invalid = 1}),           \
+                            __FORCE(rasReg, op2), rn, rd)),                    \
+        default: _Generic(mod,                                                 \
+            rasReg: __EMIT(PseudoAddSubImm, op, s, rd, rn, __OP_IMM(op2),      \
+                           __FORCE(rasReg, mod)),                              \
+            default: __EMIT(AddSubImm, op, s,                                  \
+                            __FORCEWITH(rasShift, mod,                         \
+                                        (rasShift) {.invalid = 1}),            \
+                            __OP_IMM(op2), rn, rd)))
 
 #define add(rd, rn, op2, ...) addsub(0, 0, rd, rn, op2, __VA_ARGS__)
 #define adds(rd, rn, op2, ...) addsub(0, 1, rd, rn, op2, __VA_ARGS__)
 #define sub(rd, rn, op2, ...) addsub(1, 0, rd, rn, op2, __VA_ARGS__)
 #define subs(rd, rn, op2, ...) addsub(1, 1, rd, rn, op2, __VA_ARGS__)
+#define cmp(rn, op2, ...) subs(zr((rn).sf), rn, op2, __VA_ARGS__)
+#define cmn(rn, op2, ...) adds(zr((rn).sf), rn, op2, __VA_ARGS__)
 
-#define cmp(rn, op2, ...) subs(zr(rn), rn, op2, __VA_ARGS__)
-#define cmn(rn, op2, ...) adds(zr(rn), rn, op2, __VA_ARGS__)
+#define logical(opc, n, rd, rn, op2, ...)                                      \
+    _logical(opc, n, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
+#define _logical(opc, n, rd, rn, op2, mod)                                     \
+    _Generic(op2,                                                              \
+        rasReg: __EMIT(LogicalReg, opc, n, __FORCE(rasShift, mod),             \
+                       __FORCE(rasReg, op2), rn, rd),                          \
+        default: _Generic(mod,                                                 \
+            rasReg: __EMIT(PseudoLogicalImm, opc, rd, rn,                      \
+                           __CINV(n, __OP_IMM(op2)), __FORCE(rasReg, mod)),    \
+            default: __EMIT(LogicalImm, opc, __CINV(n, __OP_IMM(op2)), rn,     \
+                            rd)))
+
+#define and(rd, rn, op2, ...) logical(0, 0, rd, rn, op2, __VA_ARGS__)
+#define bic(rd, rn, op2, ...) logical(0, 1, rd, rn, op2, __VA_ARGS__)
+#define orr(rd, rn, op2, ...) logical(1, 0, rd, rn, op2, __VA_ARGS__)
+#define orn(rd, rn, op2, ...) logical(1, 1, rd, rn, op2, __VA_ARGS__)
+#define eor(rd, rn, op2, ...) logical(2, 0, rd, rn, op2, __VA_ARGS__)
+#define eon(rd, rn, op2, ...) logical(2, 1, rd, rn, op2, __VA_ARGS__)
+#define ands(rd, rn, op2, ...) logical(3, 0, rd, rn, op2, __VA_ARGS__)
+#define bics(rd, rn, op2, ...) logical(3, 1, rd, rn, op2, __VA_ARGS__)
+#define tst(rn, op2, ...) ands(zr((rn).sf), rn, op2, __VA_ARGS__)
 
 #define lsl(s, ...) ((rasShift) {s, 0})
 #define lsr(s, ...) ((rasShift) {s, 1})
@@ -70,6 +99,13 @@
 #define movn(rd, imm, ...) movewide(0, rd, imm, __VA_ARGS__)
 #define movz(rd, imm, ...) movewide(2, rd, imm, __VA_ARGS__)
 #define movk(rd, imm, ...) movewide(3, rd, imm, __VA_ARGS__)
+
+#define mov(rd, op2)                                                           \
+    _Generic(op2,                                                              \
+        rasReg: _movreg(rd, __FORCE(rasReg, op2)),                             \
+        default: __EMIT(PseudoMovImm, rd, __OP_IMM(op2)))
+#define _movreg(rd, rm)                                                        \
+    ((rd).isSp || (rm).isSp ? add(rd, rm, 0) : orr(rd, zr((rd).sf), rm))
 
 #define __EXT_OF_SHIFT(s)                                                      \
     _Generic(s,                                                                \
@@ -243,7 +279,7 @@
 #define xzr ((rasReg) {31, 1, 0})
 #define sp ((rasReg) {31, 1, 1})
 
-#define zr(rn) ((rasReg) {31, rn.sf, 0})
+#define zr(sf) ((rasReg) {31, sf, 0})
 
 #define fp x29
 #define lr x30
