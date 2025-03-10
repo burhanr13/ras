@@ -60,6 +60,15 @@ sub(r0, r1, 0xccc000, r2);
 cmp(r0, -0xccc000, r2);
 adds(r0, r1, 0x12345678, r2);
 
+adc(r0, r1, r2);
+adcs(r0, r1, r2);
+adcx(r0, r1, r2);
+adcsx(r0, r1, r2);
+sbc(r0, r1, r2);
+sbcs(r0, r1, r2);
+sbcx(r0, r1, r2);
+sbcsx(r0, r1, r2);
+
 and(r0, r1, r2);
 bicx(r0, r1, r2, lsl(10));
 orr(r0, r1, r2, lsr(10));
@@ -109,6 +118,18 @@ lslvx(r0, r1, r2);
 lsrvx(r0, r1, r2);
 asrvx(r0, r1, r2);
 rorvx(r0, r1, r2);
+
+mul(r0, r1, r2);
+mulx(r0, r1, r2);
+smull(r0, r1, r2);
+umull(r0, r1, r2);
+
+cset(r0, eq);
+csetx(r0, eq);
+cmov(r0, r1, eq);
+cincx(r0, r1, eq);
+cinv(r0, r1, eq);
+cnegx(r0, r1, eq);
 
 movk(r0, 0x1234);
 movz(r0, 0x1234, lsl(16));

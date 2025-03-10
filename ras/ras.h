@@ -151,6 +151,16 @@ __RAS_EMIT_DECL(AddSubShiftedReg, u32 sf, u32 op, u32 s, rasShift shift,
                          0x0b000000);
 }
 
+__RAS_EMIT_DECL(AddSubCarry, u32 sf, u32 op, u32 s, rasReg rm, rasReg rn,
+                rasReg rd) {
+
+    CHECKR31(rd, 0);
+    CHECKR31(rn, 0);
+    CHECKR31(rm, 0);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | rm.idx << 16 | s << 29 | op << 30 |
+                         sf << 31 | 0x1a000000);
+}
+
 __RAS_EMIT_DECL(LogicalImm, u32 sf, u32 opc, u64 imm, rasReg rn, rasReg rd) {
     CHECKR31(rd, opc != 3);
     CHECKR31(rn, 0);
@@ -187,6 +197,28 @@ __RAS_EMIT_DECL(DataProc2Source, u32 sf, u32 s, rasReg rm, u32 opcode,
     CHECKR31(rm, 0);
     rasEmitWord(ctx, rd.idx | rn.idx << 5 | opcode << 10 | rm.idx << 16 |
                          s << 29 | sf << 31 | 0x1ac00000);
+}
+
+__RAS_EMIT_DECL(DataProc3Source, u32 sf, u32 op54, u32 op31, rasReg rm, u32 o0,
+                rasReg ra, rasReg rn, rasReg rd) {
+    CHECKR31(rd, 0);
+    CHECKR31(rn, 0);
+    CHECKR31(rm, 0);
+    CHECKR31(ra, 0);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | ra.idx << 10 | o0 << 15 |
+                         rm.idx << 16 | op31 << 21 | op54 << 29 | sf << 31 |
+                         0x1b000000);
+}
+
+__RAS_EMIT_DECL(CondSelect, u32 sf, u32 op, u32 s, rasReg rm, u32 cond, u32 op2,
+                rasReg rn, rasReg rd) {
+
+    CHECKR31(rd, 0);
+    CHECKR31(rn, 0);
+    CHECKR31(rm, 0);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | op2 << 10 | cond << 12 |
+                         rm.idx << 16 | s << 29 | op << 30 | sf << 31 |
+                         0x1a800000);
 }
 
 __RAS_EMIT_DECL(MoveWide, u32 sf, u32 opc, rasShift shift, u32 imm16,

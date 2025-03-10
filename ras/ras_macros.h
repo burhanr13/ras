@@ -28,8 +28,6 @@ extern void* _ras_invalid_argument_type;
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 
-#define __CINV(n, v) ((n) ? ~(v) : (v))
-
 #define word(w) __EMIT(Word, w)
 #define dword(d)                                                               \
     _Generic(d,                                                                \
@@ -65,6 +63,20 @@ extern void* _ras_invalid_argument_type;
 #define cmn(rn, op2, ...) adds(zr, rn, op2, __VA_ARGS__)
 #define cmpx(rn, op2, ...) subsx(zr, rn, op2, __VA_ARGS__)
 #define cmnx(rn, op2, ...) addsx(zr, rn, op2, __VA_ARGS__)
+
+#define addsubcarry(sf, op, s, rd, rn, rm)                                     \
+    __EMIT(AddSubCarry, sf, op, s, rm, rn, rd)
+
+#define adc(rd, rn, rm) addsubcarry(0, 0, 0, rd, rn, rm)
+#define sbc(rd, rn, rm) addsubcarry(0, 1, 0, rd, rn, rm)
+#define adcs(rd, rn, rm) addsubcarry(0, 0, 1, rd, rn, rm)
+#define sbcs(rd, rn, rm) addsubcarry(0, 1, 1, rd, rn, rm)
+#define adcx(rd, rn, rm) addsubcarry(1, 0, 0, rd, rn, rm)
+#define sbcx(rd, rn, rm) addsubcarry(1, 1, 0, rd, rn, rm)
+#define adcsx(rd, rn, rm) addsubcarry(1, 0, 1, rd, rn, rm)
+#define sbcsx(rd, rn, rm) addsubcarry(1, 1, 1, rd, rn, rm)
+
+#define __CINV(n, v) ((n) ? ~(v) : (v))
 
 #define logical(sf, opc, n, rd, rn, op2, ...)                                  \
     _logical(sf, opc, n, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
@@ -113,6 +125,7 @@ extern void* _ras_invalid_argument_type;
 #define revx(rd, rn) dataproc1source(1, 0, 0, 3, rd, rn)
 #define clzx(rd, rn) dataproc1source(1, 0, 0, 4, rd, rn)
 #define clsx(rd, rn) dataproc1source(1, 0, 0, 5, rd, rn)
+#define rev32(rd, rn) rev32x(rd, rn)
 
 #define dataproc2source(sf, s, opcode, rd, rn, rm)                             \
     __EMIT(DataProc2Source, sf, s, rm, opcode, rn, rd)
@@ -129,6 +142,46 @@ extern void* _ras_invalid_argument_type;
 #define lsrvx(rd, rn, rm) dataproc2source(1, 0, 9, rd, rn, rm)
 #define asrvx(rd, rn, rm) dataproc2source(1, 0, 10, rd, rn, rm)
 #define rorvx(rd, rn, rm) dataproc2source(1, 0, 11, rd, rn, rm)
+
+#define dataproc3source(sf, op54, op31, o0, rd, rn, rm, ra)                    \
+    __EMIT(DataProc3Source, sf, op54, op31, rm, o0, ra, rn, rd)
+
+#define madd(rd, rn, rm, ra) dataproc3source(0, 0, 0, 0, rd, rn, rm, ra)
+#define msub(rd, rn, rm, ra) dataproc3source(0, 0, 0, 1, rd, rn, rm, ra)
+#define maddx(rd, rn, rm, ra) dataproc3source(1, 0, 0, 0, rd, rn, rm, ra)
+#define msubx(rd, rn, rm, ra) dataproc3source(1, 0, 0, 1, rd, rn, rm, ra)
+#define smaddl(rd, rn, rm, ra) dataproc3source(1, 0, 1, 0, rd, rn, rm, ra)
+#define umaddl(rd, rn, rm, ra) dataproc3source(1, 0, 5, 0, rd, rn, rm, ra)
+#define mul(rd, rn, rm) madd(rd, rn, rm, zr)
+#define mneg(rd, rn, rm) msub(rd, rn, rm, zr)
+#define mulx(rd, rn, rm) maddx(rd, rn, rm, zr)
+#define mnegx(rd, rn, rm) msubx(rd, rn, rm, zr)
+#define smull(rd, rn, rm) smaddl(rd, rn, rm, zr)
+#define umull(rd, rn, rm) umaddl(rd, rn, rm, zr)
+
+#define condselect(sf, op, s, op2, rd, rn, rm, cond)                           \
+    __EMIT(CondSelect, sf, op, s, rm, cond, op2, rn, rd)
+
+#define csel(rd, rn, rm, cond) condselect(0, 0, 0, 0, rd, rn, rm, cond)
+#define csinc(rd, rn, rm, cond) condselect(0, 0, 0, 1, rd, rn, rm, cond)
+#define csinv(rd, rn, rm, cond) condselect(0, 1, 0, 0, rd, rn, rm, cond)
+#define csneg(rd, rn, rm, cond) condselect(0, 1, 0, 1, rd, rn, rm, cond)
+#define cselx(rd, rn, rm, cond) condselect(1, 0, 0, 0, rd, rn, rm, cond)
+#define csincx(rd, rn, rm, cond) condselect(1, 0, 0, 1, rd, rn, rm, cond)
+#define csinvx(rd, rn, rm, cond) condselect(1, 1, 0, 0, rd, rn, rm, cond)
+#define csnegx(rd, rn, rm, cond) condselect(1, 1, 0, 1, rd, rn, rm, cond)
+#define cmov(rd, rm, cond) csel(rd, rm, rd, cond)
+#define cset(rd, cond) csinc(rd, zr, zr, (cond) ^ 1)
+#define csetm(rd, cond) csinv(rd, zr, zr, (cond) ^ 1)
+#define cinv(rd, rm, cond) csinv(rd, rm, rm, (cond) ^ 1)
+#define cinc(rd, rm, cond) csinc(rd, rm, rm, (cond) ^ 1)
+#define cneg(rd, rm, cond) csneg(rd, rm, rm, (cond) ^ 1)
+#define cmovx(rd, rm, cond) cselx(rd, rm, rd, (cond) ^ 1)
+#define csetx(rd, cond) csincx(rd, zr, zr, (cond) ^ 1)
+#define csetmx(rd, cond) csinvx(rd, zr, zr, (cond) ^ 1)
+#define cinvx(rd, rm, cond) csinvx(rd, rm, rm, (cond) ^ 1)
+#define cincx(rd, rm, cond) csincx(rd, rm, rm, (cond) ^ 1)
+#define cnegx(rd, rm, cond) csnegx(rd, rm, rm, (cond) ^ 1)
 
 #define lsl(s, ...) ((rasShift) {s, 0})
 #define lsr(s, ...) ((rasShift) {s, 1})
@@ -158,16 +211,16 @@ extern void* _ras_invalid_argument_type;
 
 #define mov(rd, op2)                                                           \
     _Generic(op2,                                                              \
-        rasReg: _movreg(rd, __FORCE(rasReg, op2)),                             \
+        rasReg: ((rd).isSp || __FORCE(rasReg, op2).isSp                        \
+                     ? add(rd, __FORCE(rasReg, op2), 0)                        \
+                     : orr(rd, zr, op2)),                                      \
         default: __EMIT(PseudoMovImm, 0, rd, __OP_IMM(op2)))
-#define _movreg(rd, rm)                                                        \
-    ((rd).isSp || (rm).isSp ? add(rd, rm, 0) : orr(rd, zr, rm))
 #define movx(rd, op2)                                                          \
     _Generic(op2,                                                              \
-        rasReg: _movregx(rd, __FORCE(rasReg, op2)),                            \
+        rasReg: ((rd).isSp || __FORCE(rasReg, op2).isSp                        \
+                     ? addx(rd, __FORCE(rasReg, op2), 0)                       \
+                     : orrx(rd, zr, op2)),                                     \
         default: __EMIT(PseudoMovImm, 1, rd, __OP_IMM(op2)))
-#define _movregx(rd, rm)                                                       \
-    ((rd).isSp || (rm).isSp ? addx(rd, rm, 0) : orrx(rd, zr, rm))
 
 #define __EXT_OF_SHIFT(s)                                                      \
     _Generic(s,                                                                \
@@ -222,6 +275,7 @@ extern void* _ras_invalid_argument_type;
     _Generic(amod,                                                             \
         rasLabel: loadliteral(2, rt, __FORCE(rasLabel, amod)),                 \
         default: _ldrswx(rt, amod))
+#define ldrsw(rt, amod) ldrswx(rt, amod)
 
 #define loadstorepair(opc, l, rt, rt2, amod)                                   \
     __EMIT(LoadStorePair, opc, l, amod, rt2, rt)
@@ -242,17 +296,12 @@ extern void* _ras_invalid_argument_type;
             __VA_ARGS__)
 #define bl(l) branchuncondimm(1, l)
 
-#define hint(crm, op2) __EMIT(Hint, crm, op2)
-
-#define nop() hint(0, 0)
-
 #define branchreg(opc, op2, op3, op4, rn)                                      \
     __EMIT(BranchReg, opc, op2, op3, rn, op4)
 
 #define br(rn) branchreg(0, 31, 0, 0, rn)
 #define blr(rn) branchreg(1, 31, 0, 0, rn)
-#define ret(...) _ret(__VA_DFL(lr, __VA_ARGS__))
-#define _ret(rn) branchreg(2, 31, 0, 0, rn)
+#define ret(...) branchreg(2, 31, 0, 0, __VA_DFL(lr, __VA_ARGS__))
 
 #define eq 0
 #define ne 1
@@ -291,6 +340,9 @@ extern void* _ras_invalid_argument_type;
 #define bnv(l) b(nv, l)
 #define bhs(l) b(hs, l)
 #define blo(l) b(lo, l)
+
+#define hint(crm, op2) __EMIT(Hint, crm, op2)
+#define nop() hint(0, 0)
 
 #define Label(l, ...) rasLabel l = Lnew(__VA_ARGS__)
 #define Lnew(...) __VA_IF(_Lnewext(__VA_ARGS__), _Lnew(), __VA_ARGS__)

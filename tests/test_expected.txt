@@ -53,6 +53,14 @@ cmn w0, #0xccc, lsl #12
 mov w2, #0x5678
 movk w2, #0x1234, lsl #16
 adds w0, w1, w2
+adc w0, w1, w2
+adcs w0, w1, w2
+adc x0, x1, x2
+adcs x0, x1, x2
+sbc w0, w1, w2
+sbcs w0, w1, w2
+sbc x0, x1, x2
+sbcs x0, x1, x2
 and w0, w1, w2
 bic x0, x1, x2, lsl #10
 orr w0, w1, w2, lsr #10
@@ -101,6 +109,16 @@ lsl x0, x1, x2
 lsr x0, x1, x2
 asr x0, x1, x2
 ror x0, x1, x2
+mul w0, w1, w2
+mul x0, x1, x2
+smull x0, w1, w2
+umull x0, w1, w2
+cset w0, eq
+cset x0, eq
+csel w0, w1, w0, eq
+cinc x0, x1, eq
+cinv w0, w1, eq
+cneg x0, x1, eq
 movk w0, #0x1234
 mov w0, #0x12340000
 mov x0, #-0x1235
