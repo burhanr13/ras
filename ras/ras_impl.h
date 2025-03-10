@@ -1,3 +1,6 @@
+#ifndef __RAS_IMPL_H
+#define __RAS_IMPL_H
+
 #include "ras.h"
 #include "ras_macros.h"
 
@@ -77,6 +80,7 @@ typedef struct _rasBlock {
 
 char* rasErrorStrings[RAS_ERR_MAX] = {
     [RAS_OK] = "no error",
+    [RAS_ERR_CODE_SIZE] = "ran out of space for code",
     [RAS_ERR_BAD_R31] = "invalid use of zr/sp",
     [RAS_ERR_BAD_IMM] = "immediate out of range",
     [RAS_ERR_BAD_CONST] = "invalid constant operand (shift, extend, etc)",
@@ -87,9 +91,14 @@ char* rasErrorStrings[RAS_ERR_MAX] = {
 rasErrorCallback errorCallback = NULL;
 
 static void* jit_alloc(size_t size) {
+#ifdef RAS_USE_RWX
+    int prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+#else
+    int prot = PROT_READ | PROT_WRITE;
+#endif
     // try to map near the static code
-    void* ptr = mmap(rasErrorStrings, size, PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANON, -1, 0);
+    void* ptr =
+        mmap(rasErrorStrings, size, prot, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (ptr == MAP_FAILED) {
         perror("mmap");
         abort();
@@ -244,12 +253,16 @@ void rasApplyAllPatches(rasBlock* ctx) {
 void rasReady(rasBlock* ctx) {
     rasApplyAllPatches(ctx);
 
+#ifndef RAS_USE_RWX
     jit_protect(ctx->code, 4 * ctx->size, RX);
+#endif
     jit_clearcache(ctx->code, 4 * ctx->size);
 }
 
 void rasUnready(rasBlock* ctx) {
+#ifndef RAS_USE_RWX
     jit_protect(ctx->code, 4 * ctx->size, RW);
+#endif
 }
 
 void* rasGetCode(rasBlock* ctx) {
@@ -261,6 +274,7 @@ size_t rasGetSize(rasBlock* ctx) {
 }
 
 void rasAssert(int condition, rasError err) {
+#ifndef RAS_NO_CHECKS
     if (!condition) {
         if (errorCallback) {
             errorCallback(err);
@@ -269,6 +283,7 @@ void rasAssert(int condition, rasError err) {
             exit(1);
         }
     }
+#endif
 }
 
 static void ras_grow(rasBlock* ctx) {
@@ -282,7 +297,11 @@ static void ras_grow(rasBlock* ctx) {
 }
 
 void rasEmitWord(rasBlock* ctx, u32 w) {
+#ifdef RAS_AUTOGROW
     if (ctx->curr == ctx->code + ctx->size) ras_grow(ctx);
+#else
+    rasAssert(ctx->curr != ctx->code + ctx->size, RAS_ERR_CODE_SIZE);
+#endif
     *ctx->curr++ = w;
 }
 
@@ -479,3 +498,5 @@ void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasReg rd, rasLabel lab) {
     rasAddPatch(ctx, RAS_PATCH_PGOFF12, lab);
     addx(rd, rd, 0);
 }
+
+#endif

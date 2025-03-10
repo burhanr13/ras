@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ras/ras.h"
+#define RAS_MACROS
 #define RAS_DEFAULT_SUFFIX w
-#include "ras/ras_macros.h"
+#include "ras/ras.h"
 
 int main() {
     rasBlock* ctx = rasCreate(16384);

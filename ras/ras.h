@@ -19,6 +19,7 @@ typedef struct _rasSymbol* rasLabel;
 
 typedef enum {
     RAS_OK,
+    RAS_ERR_CODE_SIZE,
     RAS_ERR_BAD_R31,
     RAS_ERR_BAD_IMM,
     RAS_ERR_BAD_CONST,
@@ -80,10 +81,6 @@ int rasGenerateLogicalImm(u64 imm, u32 sf, u32* immr, u32* imms, u32* n);
 
 void rasEmitWord(rasBlock* ctx, u32 w);
 void rasEmitDword(rasBlock* ctx, u64 d);
-
-#ifdef RAS_NO_CHECKS
-#define rasAssert(...)
-#endif
 
 #define MASK(b) ((1 << (b)) - 1)
 #define ISNBITSU(n, b) ((u32) (n) >> (b) == 0)
@@ -328,4 +325,12 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm);
 void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm);
 void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasReg rd, rasLabel lab);
 
+#endif
+
+#ifdef RAS_MACROS
+#include "ras_macros.h"
+#endif
+
+#ifdef RAS_IMPL
+#include "ras_impl.h"
 #endif
