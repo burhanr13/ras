@@ -127,6 +127,28 @@ csel w0, w1, w0, eq
 cinc x0, x1, eq
 cinv w0, w1, eq
 cneg x0, x1, eq
+sbfiz w0, w1, #3, #0xa
+sbfx w0, w1, #0xa, #0x14
+bfi x0, x1, #0x28, #0xa
+ubfx x0, x1, #0x28, #0xa
+ubfiz w0, w1, #0xf, #5
+lsl w0, w1, #0xa
+lsr w0, w1, #0xa
+asr w0, w1, #0xa
+ror w0, w1, #0xa
+lsl x0, x1, #0x28
+lsr x0, x1, #0x28
+asr x0, x1, #0x28
+ror x0, x1, #0x28
+lsl w0, w1, w2
+ror x0, x1, x2
+uxtb w0, w1
+sxtb w0, w1
+sxtb x0, w1
+uxth w0, w1
+sxth w0, w1
+sxth x0, w1
+sxtw x0, w1
 extr w0, w1, w2, #0x14
 extr x0, x1, x2, #0x32
 movk w0, #0x1234

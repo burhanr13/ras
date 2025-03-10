@@ -379,13 +379,13 @@ void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
     if (ISNBITSU(imm, 12)) {
         addsub(sf, op, s, rd, rn, imm);
     } else if (ISNBITSU(imm, 24) && ISLOWBITS0(imm, 12)) {
-        addsub(sf, op, s, rd, rn, imm >> 12, lsl(12));
+        addsub(sf, op, s, rd, rn, imm >> 12, _lsl(12));
     } else {
         imm = -imm;
         if (ISNBITSU(imm, 12)) {
             addsub(sf, !op, s, rd, rn, imm);
         } else if (ISNBITSU(imm, 24) && ISLOWBITS0(imm, 12)) {
-            addsub(sf, !op, s, rd, rn, imm >> 12, lsl(12));
+            addsub(sf, !op, s, rd, rn, imm >> 12, _lsl(12));
         } else {
             imm = -imm;
             if (sf) {
@@ -472,7 +472,7 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
             } else {
                 opc = 3;
             }
-            movewide(sf, opc, rd, hw, lsl(16 * i));
+            movewide(sf, opc, rd, hw, _lsl(16 * i));
         }
     }
 }
@@ -489,6 +489,41 @@ void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm) {
             orrx(rd, zr, rm);
         } else {
             orrw(rd, zr, rm);
+        }
+    }
+}
+
+void rasEmitPseudoShiftImm(rasBlock* ctx, u32 sf, u32 type, rasReg rd,
+                           rasReg rn, u32 imm) {
+    if (sf) {
+        switch (type) {
+            case 0:
+                ubfizx(rd, rn, imm, 64 - imm);
+                break;
+            case 1:
+                ubfxx(rd, rn, imm, 64 - imm);
+                break;
+            case 2:
+                sbfxx(rd, rn, imm, 64 - imm);
+                break;
+            case 3:
+                extrx(rd, rn, rn, imm);
+                break;
+        }
+    } else {
+        switch (type) {
+            case 0:
+                ubfizw(rd, rn, imm, 32 - imm);
+                break;
+            case 1:
+                ubfxw(rd, rn, imm, 32 - imm);
+                break;
+            case 2:
+                sbfxw(rd, rn, imm, 32 - imm);
+                break;
+            case 3:
+                extrw(rd, rn, rn, imm);
+                break;
         }
     }
 }

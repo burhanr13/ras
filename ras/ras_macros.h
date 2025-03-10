@@ -32,7 +32,7 @@ extern void* _ras_invalid_argument_type;
         default: __EMIT(Dword, __FORCE_INT(d)))
 
 #define addsub(sf, op, s, rd, rn, op2, ...)                                    \
-    _addsub(sf, op, s, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
+    _addsub(sf, op, s, rd, rn, op2, __VA_DFL(_lsl(0), __VA_ARGS__))
 #define _addsub(sf, op, s, rd, rn, op2, mod)                                   \
     _Generic(op2,                                                              \
         rasReg: _Generic(mod,                                                  \
@@ -76,7 +76,7 @@ extern void* _ras_invalid_argument_type;
 #define __CINV(n, v) ((n) ? ~(v) : (v))
 
 #define logical(sf, opc, n, rd, rn, op2, ...)                                  \
-    _logical(sf, opc, n, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
+    _logical(sf, opc, n, rd, rn, op2, __VA_DFL(_lsl(0), __VA_ARGS__))
 #define _logical(sf, opc, n, rd, rn, op2, mod)                                 \
     _Generic(op2,                                                              \
         rasReg: __EMIT(LogicalReg, sf, opc, n, __FORCE(rasShift, mod),         \
@@ -180,27 +180,75 @@ extern void* _ras_invalid_argument_type;
 #define cincx(rd, rm, cond) csincx(rd, rm, rm, (cond) ^ 1)
 #define cnegx(rd, rm, cond) csnegx(rd, rm, rm, (cond) ^ 1)
 
+#define bitfield(sf, opc, n, rd, rn, immr, imms)                               \
+    __EMIT(Bitfield, sf, opc, n, immr, imms, rn, rd)
+
+#define sbfmw(rd, rn, immr, imms) bitfield(0, 0, 0, rd, rn, immr, imms)
+#define bfmw(rd, rn, immr, imms) bitfield(0, 1, 0, rd, rn, immr, imms)
+#define ubfmw(rd, rn, immr, imms) bitfield(0, 2, 0, rd, rn, immr, imms)
+#define sbfmx(rd, rn, immr, imms) bitfield(1, 0, 1, rd, rn, immr, imms)
+#define bfmx(rd, rn, immr, imms) bitfield(1, 1, 1, rd, rn, immr, imms)
+#define ubfmx(rd, rn, immr, imms) bitfield(1, 2, 1, rd, rn, immr, imms)
+#define sbfizw(rd, rn, lsb, width) sbfmw(rd, rn, 32 - lsb, width - 1)
+#define sbfxw(rd, rn, lsb, width) sbfmw(rd, rn, lsb, lsb + width - 1)
+#define bfiw(rd, rn, lsb, width) bfmw(rd, rn, 32 - lsb, width - 1)
+#define bfcw(rd, lsb, width) bfiw(rd, zr, lsb, width)
+#define bfxilw(rd, rn, lsb, width) bfmw(rd, rn, lsb, lsb + width - 1)
+#define ubfizw(rd, rn, lsb, width) ubfmw(rd, rn, 32 - lsb, width - 1)
+#define ubfxw(rd, rn, lsb, width) ubfmw(rd, rn, lsb, lsb + width - 1)
+#define sbfizx(rd, rn, lsb, width) sbfmx(rd, rn, 64 - lsb, width - 1)
+#define sbfxx(rd, rn, lsb, width) sbfmx(rd, rn, lsb, lsb + width - 1)
+#define bfix(rd, rn, lsb, width) bfmx(rd, rn, 64 - lsb, width - 1)
+#define bfcx(rd, lsb, width) bfix(rd, zr, lsb, width)
+#define bfxilx(rd, rn, lsb, width) bfmx(rd, rn, lsb, lsb + width - 1)
+#define ubfizx(rd, rn, lsb, width) ubfmx(rd, rn, 64 - lsb, width - 1)
+#define ubfxx(rd, rn, lsb, width) ubfmx(rd, rn, lsb, lsb + width - 1)
+
 #define extract(sf, op21, n, o0, rd, rn, rm, imms)                             \
     __EMIT(Extract, sf, op21, n, o0, rm, imms, rn, rd)
 
 #define extrw(rd, rn, rm, imms) extract(0, 0, 0, 0, rd, rn, rm, imms)
 #define extrx(rd, rn, rm, imms) extract(1, 0, 1, 0, rd, rn, rm, imms)
 
-#define lsl(s, ...) ((rasShift) {s, 0})
-#define lsr(s, ...) ((rasShift) {s, 1})
-#define asr(s, ...) ((rasShift) {s, 2})
+#define shift(sf, type, rd, rn, op2)                                           \
+    _Generic(op2,                                                              \
+        rasReg: dataproc2source(sf, 0, 8 + type, rd, rn, __FORCE(rasReg, op2)), \
+        default: __EMIT(PseudoShiftImm, sf, type, rd, rn, __FORCE_INT(op2)))
 
-#define extend(type, ...) _extend(type, __VA_DFL(0, __VA_ARGS__))
-#define _extend(type, s, ...) ((rasExtend) {s, type})
+#define lslw(rd, rn, op2) shift(0, 0, rd, rn, op2)
+#define lsrw(rd, rn, op2) shift(0, 1, rd, rn, op2)
+#define asrw(rd, rn, op2) shift(0, 2, rd, rn, op2)
+#define rorw(rd, rn, op2) shift(0, 3, rd, rn, op2)
+#define lslx(rd, rn, op2) shift(1, 0, rd, rn, op2)
+#define lsrx(rd, rn, op2) shift(1, 1, rd, rn, op2)
+#define asrx(rd, rn, op2) shift(1, 2, rd, rn, op2)
+#define rorx(rd, rn, op2) shift(1, 3, rd, rn, op2)
 
-#define uxtb(...) extend(0, __VA_ARGS__)
-#define uxth(...) extend(1, __VA_ARGS__)
-#define uxtw(...) extend(2, __VA_ARGS__)
-#define uxtx(...) extend(3, __VA_ARGS__)
-#define sxtb(...) extend(4, __VA_ARGS__)
-#define sxth(...) extend(5, __VA_ARGS__)
-#define sxtw(...) extend(6, __VA_ARGS__)
-#define sxtx(...) extend(7, __VA_ARGS__)
+#define uxtb(rd, rn) ubfxw(rd, rn, 0, 8)
+#define uxth(rd, rn) ubfxw(rd, rn, 0, 16)
+#define sxtbw(rd, rn) sbfxw(rd, rn, 0, 8)
+#define sxtbx(rd, rn) sbfxx(rd, rn, 0, 8)
+#define sxthw(rd, rn) sbfxw(rd, rn, 0, 16)
+#define sxthx(rd, rn) sbfxx(rd, rn, 0, 16)
+#define sxtw(rd, rn) sbfxx(rd, rn, 0, 32)
+#define sxtwx(rd, rn) sxtw(rd, rn)
+
+#define shiftmod(t, amt) ((rasShift) {amt, t})
+
+#define _lsl(amt) shiftmod(0, amt)
+#define _lsr(amt) shiftmod(1, amt)
+#define _asr(amt) shiftmod(2, amt)
+
+#define extendmod(type, ...) ((rasExtend) {__VA_DFL(0, __VA_ARGS__), type})
+
+#define _uxtb(...) extendmod(0, __VA_ARGS__)
+#define _uxth(...) extendmod(1, __VA_ARGS__)
+#define _uxtw(...) extendmod(2, __VA_ARGS__)
+#define _uxtx(...) extendmod(3, __VA_ARGS__)
+#define _sxtb(...) extendmod(4, __VA_ARGS__)
+#define _sxth(...) extendmod(5, __VA_ARGS__)
+#define _sxtw(...) extendmod(6, __VA_ARGS__)
+#define _sxtx(...) extendmod(7, __VA_ARGS__)
 
 #define pcreladdr(op, rd, l) __EMIT(PCRelAddr, op, l, rd)
 
@@ -209,7 +257,7 @@ extern void* _ras_invalid_argument_type;
 #define adrl(rd, l) __EMIT(PseudoPCRelAddrLong, rd, l)
 
 #define movewide(sf, opc, rd, imm, ...)                                        \
-    __EMIT(MoveWide, sf, opc, __VA_DFL(lsl(0), __VA_ARGS__), imm, rd)
+    __EMIT(MoveWide, sf, opc, __VA_DFL(_lsl(0), __VA_ARGS__), imm, rd)
 
 #define movnw(rd, imm, ...) movewide(0, 0, rd, imm, __VA_ARGS__)
 #define movzw(rd, imm, ...) movewide(0, 2, rd, imm, __VA_ARGS__)
@@ -248,7 +296,7 @@ extern void* _ras_invalid_argument_type;
         default: rasEmitLoadStoreImmOff)(                                      \
         RAS_CTX_VAR, size, opc, off,                                           \
         _Generic(off,                                                          \
-            rasReg: __MAKE_EXT(__VA_DFL(uxtx(), __VA_ARGS__)),                 \
+            rasReg: __MAKE_EXT(__VA_DFL(_uxtx(), __VA_ARGS__)),                \
             default: __VA_DFL(0, __VA_ARGS__)),                                \
         rn, rt)
 
@@ -452,7 +500,23 @@ extern void* _ras_invalid_argument_type;
 #define cinc _(cinc)
 #define cinv _(cinv)
 #define cneg _(cneg)
+#define sbfm _(sbfm)
+#define bfm _(bfm)
+#define ubfm _(ubfm)
+#define sbfiz _(sbfiz)
+#define sbfx _(sbfx)
+#define bfi _(bfi)
+#define bfc _(bfc)
+#define bfxil _(bfxil)
+#define ubfiz _(ubfiz)
+#define ubfx _(ubfx)
 #define extr _(extr)
+#define lsl _(lsl)
+#define lsr _(lsr)
+#define asr _(asr)
+#define ror _(ror)
+#define sxtb _(sxtb)
+#define sxth _(sxth)
 #define movn _(movn)
 #define movz _(movz)
 #define movk _(movk)
