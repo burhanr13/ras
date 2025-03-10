@@ -199,6 +199,12 @@ extern void* _ras_invalid_argument_type;
 #define sxtw(...) extend(6, __VA_ARGS__)
 #define sxtx(...) extend(7, __VA_ARGS__)
 
+#define pcreladdr(op, rd, l) __EMIT(PCRelAddr, op, l, rd)
+
+#define adr(rd, l) pcreladdr(0, rd, l)
+#define adrp(rd, l) pcreladdr(1, rd, l)
+#define adrl(rd, l) __EMIT(PseudoPCRelAddrLong, rd, l)
+
 #define movewide(sf, opc, rd, imm, ...)                                        \
     __EMIT(MoveWide, sf, opc, __VA_DFL(lsl(0), __VA_ARGS__), imm, rd)
 
@@ -211,15 +217,11 @@ extern void* _ras_invalid_argument_type;
 
 #define mov(rd, op2)                                                           \
     _Generic(op2,                                                              \
-        rasReg: ((rd).isSp || __FORCE(rasReg, op2).isSp                        \
-                     ? add(rd, __FORCE(rasReg, op2), 0)                        \
-                     : orr(rd, zr, op2)),                                      \
+        rasReg: __EMIT(PseudoMovReg, 0, rd, __FORCE(rasReg, op2)),             \
         default: __EMIT(PseudoMovImm, 0, rd, __OP_IMM(op2)))
 #define movx(rd, op2)                                                          \
     _Generic(op2,                                                              \
-        rasReg: ((rd).isSp || __FORCE(rasReg, op2).isSp                        \
-                     ? addx(rd, __FORCE(rasReg, op2), 0)                       \
-                     : orrx(rd, zr, op2)),                                     \
+        rasReg: __EMIT(PseudoMovReg, 1, rd, __FORCE(rasReg, op2)),             \
         default: __EMIT(PseudoMovImm, 1, rd, __OP_IMM(op2)))
 
 #define __EXT_OF_SHIFT(s)                                                      \
@@ -384,11 +386,11 @@ extern void* _ras_invalid_argument_type;
 #define r28 reg(28)
 #define r29 reg(29)
 #define r30 reg(30)
-
-#define zr ((rasReg) {31, 0})
-#define sp ((rasReg) {31, 1})
-
+#define ip1 r16
+#define ip2 r17
 #define fp r29
 #define lr r30
+#define zr ((rasReg) {31, 0})
+#define sp ((rasReg) {31, 1})
 
 #endif

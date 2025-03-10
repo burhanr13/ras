@@ -209,12 +209,24 @@ void rasApplyPatch(rasBlock* ctx, rasPatch p) {
             *patchinst |= reladdr;
             break;
         }
-        case RAS_PATCH_REL19: {
-            rasAssert(ISLOWBITS0(reladdr, 2), RAS_ERR_BAD_LABEL);
+        case RAS_PATCH_PGREL21:
+            reladdr = ((size_t) symaddr >> 12) - ((size_t) patchaddr >> 12);
+            __attribute__((fallthrough));
+        case RAS_PATCH_REL19:
+        case RAS_PATCH_REL21: {
+            if (p.type == RAS_PATCH_REL19) {
+                rasAssert(ISLOWBITS0(reladdr, 2), RAS_ERR_BAD_LABEL);
+            } else {
+                *patchinst |= (reladdr & MASK(2)) << 29;
+            }
             reladdr >>= 2;
             rasAssert(ISNBITSS(reladdr, 19), RAS_ERR_BAD_LABEL);
             reladdr &= MASK(19);
             *patchinst |= reladdr << 5;
+            break;
+        }
+        case RAS_PATCH_PGOFF12: {
+            *patchinst |= ((size_t) symaddr & MASK(12)) << 10;
             break;
         }
     }
@@ -436,4 +448,26 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
             movewide(sf, opc, rd, hw, lsl(16 * i));
         }
     }
+}
+
+void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm) {
+    if (rd.isSp || rm.isSp) {
+        if (sf) {
+            addx(rd, rm, 0);
+        } else {
+            add(rd, rm, 0);
+        }
+    } else {
+        if (sf) {
+            orrx(rd, zr, rm);
+        } else {
+            orr(rd, zr, rm);
+        }
+    }
+}
+
+void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasReg rd, rasLabel lab) {
+    adrp(rd, lab);
+    rasAddPatch(ctx, RAS_PATCH_PGOFF12, lab);
+    addx(rd, rd, 0);
 }

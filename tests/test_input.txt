@@ -1,4 +1,4 @@
-Label(l1); Label(l2); Label(l3); Label(l4); Label(l5);
+Label(l1); Label(l2); Label(l3); Label(l4); Label(l5); Label(l6);
 L(l1);
 b(l2);
 bl(l1);
@@ -24,7 +24,11 @@ L(l4);
 ldr(r0, l5);
 ldrx(r0, l1);
 ldrswx(r0, l2);
+adr(r0, l4);
+adr(r0, l6);
 L(l5);
+adrl(r0, l6);
+L(l6);
 
 add(r0, r1, 0x123);
 addsx(r2, r3, 1, lsl(12));

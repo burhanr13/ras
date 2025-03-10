@@ -16,9 +16,13 @@ b.gt #0
 b.le #8
 b.al #0x28
 b.nv #0x48
-ldr w0, #0x54
+ldr w0, #0x5c
 ldr x0, #0
 ldrsw x0, #8
+adr x0, #0x48
+adr x0, #0x64
+adrp x0, #0
+add x0, x0, #0x64
 add w0, w1, #0x123
 adds x2, x3, #1, lsl #12
 sub w4, w5, #0xabc
@@ -152,7 +156,7 @@ mov x0, x1
 mov sp, x0
 mov x0, sp
 strb w0, [x1, x2]
-ldurb w0, [x1, #0x10]
+ldrb w0, [x1, #0x10]
 ldursb w0, [x1, #-0x10]
 ldrsb x0, [x1, #0xff]!
 strh w0, [x1, #0x1ffe]

@@ -4,10 +4,6 @@
 #include "ras/ras.h"
 #include "ras/ras_macros.h"
 
-int test() {
-    return 2;
-}
-
 int main() {
     rasBlock* ctx = rasCreate(16384);
 
@@ -16,7 +12,7 @@ int main() {
 
     push(fp, lr);
 
-    movz(r1, 0);
+    mov(r1, 0);
 
     L(lloop);
     cmp(r0, 0);

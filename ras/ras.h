@@ -32,6 +32,9 @@ typedef enum {
     RAS_PATCH_ABS64,
     RAS_PATCH_REL26,
     RAS_PATCH_REL19,
+    RAS_PATCH_REL21,
+    RAS_PATCH_PGREL21,
+    RAS_PATCH_PGOFF12,
 } rasPatchType;
 
 extern char* rasErrorStrings[];
@@ -221,6 +224,12 @@ __RAS_EMIT_DECL(CondSelect, u32 sf, u32 op, u32 s, rasReg rm, u32 cond, u32 op2,
                          0x1a800000);
 }
 
+__RAS_EMIT_DECL(PCRelAddr, u32 op, rasLabel lab, rasReg rd) {
+    CHECKR31(rd, 0);
+    rasAddPatch(ctx, op ? RAS_PATCH_PGREL21 : RAS_PATCH_REL21, lab);
+    rasEmitWord(ctx, rd.idx | op << 31 | 0x10000000);
+}
+
 __RAS_EMIT_DECL(MoveWide, u32 sf, u32 opc, rasShift shift, u32 imm16,
                 rasReg rd) {
     CHECKR31(rd, 0);
@@ -242,19 +251,17 @@ __RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, rasAddrImm amod,
                 rasReg rt) {
     CHECKR31(rt, 0);
     CHECKR31(amod.rn, 1);
-    if (ISNBITSS(amod.imm, 9)) {
+    if (amod.mode == 0 && ISLOWBITS0(amod.imm, size) &&
+        ISNBITSU(amod.imm >> size, 12)) {
+        amod.imm >>= size;
+        rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | amod.imm << 10 |
+                             opc << 22 | size << 30 | 0x39000000);
+    } else {
+        rasAssert(ISNBITSS(amod.imm, 9), RAS_ERR_BAD_IMM);
         amod.imm &= MASK(9);
         rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | amod.mode << 10 |
                              amod.imm << 12 | opc << 22 | size << 30 |
                              0x38000000);
-    } else {
-        // pre/post index can only be used with simm9
-        rasAssert(amod.mode == 0, RAS_ERR_BAD_IMM);
-        rasAssert(ISLOWBITS0(amod.imm, size), RAS_ERR_BAD_IMM);
-        amod.imm >>= size;
-        rasAssert(ISNBITSU(amod.imm, 12), RAS_ERR_BAD_IMM);
-        rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | amod.imm << 10 |
-                             opc << 22 | size << 30 | 0x39000000);
     }
 }
 
@@ -323,5 +330,7 @@ void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
 void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 sf, u32 opc, rasReg rd,
                              rasReg rn, u64 imm, rasReg rtmp);
 void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm);
+void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm);
+void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasReg rd, rasLabel lab);
 
 #endif
