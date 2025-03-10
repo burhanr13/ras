@@ -20,11 +20,19 @@
 // this solution using an undefined symbol is from
 // https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
 extern void* _ras_invalid_argument_type;
-#define __OP_IMM(op)                                                           \
+#define __FORCE_INT(op)                                                        \
     _Generic(op,                                                               \
-        rasReg: *(int*) _ras_invalid_argument_type,                            \
-        rasLabel: *(int*) _ras_invalid_argument_type,                          \
-        default: op)
+        signed char: op,                                                       \
+        unsigned char: op,                                                     \
+        unsigned short: op,                                                    \
+        signed short: op,                                                      \
+        unsigned int: op,                                                      \
+        signed int: op,                                                        \
+        unsigned long: op,                                                     \
+        signed long: op,                                                       \
+        unsigned long long: op,                                                \
+        signed long long: op,                                                  \
+        default: *(int*) _ras_invalid_argument_type)
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 
@@ -32,7 +40,7 @@ extern void* _ras_invalid_argument_type;
 #define dword(d)                                                               \
     _Generic(d,                                                                \
         rasLabel: __EMIT(AbsAddr, __FORCE(rasLabel, d)),                       \
-        default: __EMIT(Dword, __OP_IMM(d)))
+        default: __EMIT(Dword, __FORCE_INT(d)))
 
 #define addsub(sf, op, s, rd, rn, op2, ...)                                    \
     _addsub(sf, op, s, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
@@ -46,10 +54,10 @@ extern void* _ras_invalid_argument_type;
                             __FORCE(rasExtend, mod), __FORCE(rasReg, op2), rn, \
                             rd)),                                              \
         default: _Generic(mod,                                                 \
-            rasReg: __EMIT(PseudoAddSubImm, sf, op, s, rd, rn, __OP_IMM(op2),  \
-                           __FORCE(rasReg, mod)),                              \
+            rasReg: __EMIT(PseudoAddSubImm, sf, op, s, rd, rn,                 \
+                           __FORCE_INT(op2), __FORCE(rasReg, mod)),            \
             default: __EMIT(AddSubImm, sf, op, s, __FORCE(rasShift, mod),      \
-                            __OP_IMM(op2), rn, rd)))
+                            __FORCE_INT(op2), rn, rd)))
 
 #define add(rd, rn, op2, ...) addsub(0, 0, 0, rd, rn, op2, __VA_ARGS__)
 #define adds(rd, rn, op2, ...) addsub(0, 0, 1, rd, rn, op2, __VA_ARGS__)
@@ -86,9 +94,9 @@ extern void* _ras_invalid_argument_type;
                        __FORCE(rasReg, op2), rn, rd),                          \
         default: _Generic(mod,                                                 \
             rasReg: __EMIT(PseudoLogicalImm, sf, opc, rd, rn,                  \
-                           __CINV(n, __OP_IMM(op2)), __FORCE(rasReg, mod)),    \
-            default: __EMIT(LogicalImm, sf, opc, __CINV(n, __OP_IMM(op2)), rn, \
-                            rd)))
+                           __CINV(n, __FORCE_INT(op2)), __FORCE(rasReg, mod)), \
+            default: __EMIT(LogicalImm, sf, opc, __CINV(n, __FORCE_INT(op2)),  \
+                            rn, rd)))
 
 #define and(rd, rn, op2, ...) logical(0, 0, 0, rd, rn, op2, __VA_ARGS__)
 #define bic(rd, rn, op2, ...) logical(0, 0, 1, rd, rn, op2, __VA_ARGS__)
@@ -218,36 +226,34 @@ extern void* _ras_invalid_argument_type;
 #define mov(rd, op2)                                                           \
     _Generic(op2,                                                              \
         rasReg: __EMIT(PseudoMovReg, 0, rd, __FORCE(rasReg, op2)),             \
-        default: __EMIT(PseudoMovImm, 0, rd, __OP_IMM(op2)))
+        default: __EMIT(PseudoMovImm, 0, rd, __FORCE_INT(op2)))
 #define movx(rd, op2)                                                          \
     _Generic(op2,                                                              \
         rasReg: __EMIT(PseudoMovReg, 1, rd, __FORCE(rasReg, op2)),             \
-        default: __EMIT(PseudoMovImm, 1, rd, __OP_IMM(op2)))
+        default: __EMIT(PseudoMovImm, 1, rd, __FORCE_INT(op2)))
 
-#define __EXT_OF_SHIFT(s)                                                      \
+#define __MAKE_EXT(s)                                                          \
     _Generic(s,                                                                \
-        rasShift: ((rasExtend) {s.amt, 3, s.type != 0 || s.amt > 4}),          \
-        rasExtend: s)
+        rasShift: __EXT_OF_SHIFT(__FORCE(rasShift, s)),                        \
+        rasExtend: s,                                                          \
+        default: *(rasExtend*) _ras_invalid_argument_type)
+#define __EXT_OF_SHIFT(s) ((rasExtend) {s.amt, 3, s.type != 0 || s.amt > 4})
 
-#define ptr(rn, ...) _ptr(rn, __VA_DFL(0, __VA_ARGS__))
-#define _ptr(x, y) __ptr(x, y)
-#define __ptr(rn, off, ...)                                                    \
+#define loadstore(size, opc, rt, amod) _loadstore(size, opc, rt, __ID amod)
+#define _loadstore(size, opc, rt, amod) __loadstore(size, opc, rt, amod)
+#define __loadstore(size, opc, rt, rn, ...)                                    \
+    ___loadstore(size, opc, rt, rn, __VA_DFL(0, __VA_ARGS__))
+#define ___loadstore(size, opc, rt, rn, off)                                   \
+    ____loadstore(size, opc, rt, rn, off)
+#define ____loadstore(size, opc, rt, rn, off, ...)                             \
     _Generic(off,                                                              \
-        rasReg: ((rasAddrReg) {                                                \
-            rn, __FORCE(rasReg, off),                                          \
-            __EXT_OF_SHIFT(__VA_DFL(lsl(0), __VA_ARGS__))}),                   \
-        default: ((rasAddrImm) {rn, 0, {__OP_IMM(off)}}))
-
-#define post_ptr(rn, off) ((rasAddrImm) {rn, 1, {off}})
-#define pre_ptr(rn, off) ((rasAddrImm) {rn, 3, {off}})
-
-#define loadstore(size, opc, rt, amod)                                         \
-    _Generic(amod,                                                             \
-        rasAddrReg: __EMIT(LoadStoreRegOff, size, opc,                         \
-                           __FORCE(rasAddrReg, amod), rt),                     \
-        rasAddrImm: __EMIT(LoadStoreImmOff, size, opc,                         \
-                           __FORCE(rasAddrImm, amod), rt),                     \
-        rasLabel: (void) 0)
+        rasReg: rasEmitLoadStoreRegOff,                                        \
+        default: rasEmitLoadStoreImmOff)(                                      \
+        RAS_CTX_VAR, size, opc, off,                                           \
+        _Generic(off,                                                          \
+            rasReg: __MAKE_EXT(__VA_DFL(uxtx(), __VA_ARGS__)),                 \
+            default: __VA_DFL(0, __VA_ARGS__)),                                \
+        rn, rt)
 
 #define strb(rt, amod) loadstore(0, 0, rt, amod)
 #define ldrb(rt, amod) loadstore(0, 1, rt, amod)
@@ -258,37 +264,40 @@ extern void* _ras_invalid_argument_type;
 #define ldrshx(rt, amod) loadstore(1, 2, rt, amod)
 #define ldrsh(rt, amod) loadstore(1, 3, rt, amod)
 #define str(rt, amod) loadstore(2, 0, rt, amod)
-#define _ldr(rt, amod) loadstore(2, 1, rt, amod)
-#define _ldrswx(rt, amod) loadstore(2, 2, rt, amod)
+#define ldr(rt, amod) loadstore(2, 1, rt, amod)
+#define ldrswx(rt, amod) loadstore(2, 2, rt, amod)
 #define strx(rt, amod) loadstore(3, 0, rt, amod)
-#define _ldrx(rt, amod) loadstore(3, 1, rt, amod)
+#define ldrx(rt, amod) loadstore(3, 1, rt, amod)
+#define ldrsw(rt, amod) ldrswx(rt, amod)
 
 #define loadliteral(opc, rt, l) __EMIT(LoadLiteral, opc, l, rt)
 
-#define ldr(rt, amod)                                                          \
-    _Generic(amod,                                                             \
-        rasLabel: loadliteral(0, rt, __FORCE(rasLabel, amod)),                 \
-        default: _ldr(rt, amod))
-#define ldrx(rt, amod)                                                         \
-    _Generic(amod,                                                             \
-        rasLabel: loadliteral(1, rt, __FORCE(rasLabel, amod)),                 \
-        default: _ldrx(rt, amod))
-#define ldrswx(rt, amod)                                                       \
-    _Generic(amod,                                                             \
-        rasLabel: loadliteral(2, rt, __FORCE(rasLabel, amod)),                 \
-        default: _ldrswx(rt, amod))
-#define ldrsw(rt, amod) ldrswx(rt, amod)
+#define ldrl(rt, l) loadliteral(0, rt, l)
+#define ldrxl(rt, l) loadliteral(1, rt, l)
+#define ldrswxl(rt, l) loadliteral(2, rt, l)
+#define ldrswl(rt, l) ldrswxl(rt, l)
 
 #define loadstorepair(opc, l, rt, rt2, amod)                                   \
-    __EMIT(LoadStorePair, opc, l, amod, rt2, rt)
+    _loadstorepair(opc, l, rt, rt2, __ID amod)
+#define _loadstorepair(opc, l, rt, rt2, amod)                                  \
+    __loadstorepair(opc, l, rt, rt2, amod)
+#define __loadstorepair(opc, l, rt, rt2, rn, ...)                              \
+    ___loadstorepair(opc, l, rt, rt2, rn, __VA_DFL(0, __VA_ARGS__))
+#define ___loadstorepair(opc, l, rt, rt2, rn, off)                             \
+    ____loadstorepair(opc, l, rt, rt2, rn, off)
+#define ____loadstorepair(opc, l, rt, rt2, rn, off, ...)                       \
+    __EMIT(LoadStorePair, opc, __VA_DFL(2, __VA_ARGS__), l, off, rt2, rn, rt)
 
 #define stp(rt, rt2, amod) loadstorepair(0, 0, rt, rt2, amod)
 #define ldp(rt, rt2, amod) loadstorepair(0, 1, rt, rt2, amod)
 #define ldpswx(rt, rt2, amod) loadstorepair(1, 1, rt, rt2, amod)
 #define stpx(rt, rt2, amod) loadstorepair(2, 0, rt, rt2, amod)
 #define ldpx(rt, rt2, amod) loadstorepair(2, 1, rt, rt2, amod)
-#define push(rt, rt2) stpx(rt, rt2, pre_ptr(sp, -0x10))
-#define pop(rt, rt2) ldpx(rt, rt2, post_ptr(sp, 0x10))
+#define push(rt, rt2) stpx(rt, rt2, (sp, -0x10, pre))
+#define pop(rt, rt2) ldpx(rt, rt2, (sp, 0x10, post))
+
+#define post 1
+#define pre 3
 
 #define branchuncondimm(op, l) __EMIT(BranchUncondImm, op, l)
 #define branchcondimm(c, o0, l) __EMIT(BranchCondImm, l, o0, c)

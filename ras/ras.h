@@ -55,21 +55,6 @@ typedef struct {
     u8 invalid : 1;
 } rasExtend;
 
-typedef struct {
-    rasReg rn;
-    u16 mode : 2;
-    union {
-        u32 imm;
-        s32 simm;
-    };
-} rasAddrImm;
-
-typedef struct {
-    rasReg rn;
-    rasReg rm;
-    rasExtend ext;
-} rasAddrReg;
-
 typedef void (*rasErrorCallback)(rasError);
 
 void rasSetErrorCallback(rasErrorCallback cb);
@@ -247,36 +232,33 @@ __RAS_EMIT_DECL(MoveWide, u32 sf, u32 opc, rasShift shift, u32 imm16,
                          0x12800000);
 }
 
-__RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, rasAddrImm amod,
+__RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, u32 imm, u32 mod, rasReg rn,
                 rasReg rt) {
     CHECKR31(rt, 0);
-    CHECKR31(amod.rn, 1);
-    if (amod.mode == 0 && ISLOWBITS0(amod.imm, size) &&
-        ISNBITSU(amod.imm >> size, 12)) {
-        amod.imm >>= size;
-        rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | amod.imm << 10 |
-                             opc << 22 | size << 30 | 0x39000000);
+    CHECKR31(rn, 1);
+    if (mod == 0 && ISLOWBITS0(imm, size) && ISNBITSU(imm >> size, 12)) {
+        imm >>= size;
+        rasEmitWord(ctx, rt.idx | rn.idx << 5 | imm << 10 | opc << 22 |
+                             size << 30 | 0x39000000);
     } else {
-        rasAssert(ISNBITSS(amod.imm, 9), RAS_ERR_BAD_IMM);
-        amod.imm &= MASK(9);
-        rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | amod.mode << 10 |
-                             amod.imm << 12 | opc << 22 | size << 30 |
-                             0x38000000);
+        rasAssert(ISNBITSS(imm, 9), RAS_ERR_BAD_IMM);
+        imm &= MASK(9);
+        rasEmitWord(ctx, rt.idx | rn.idx << 5 | mod << 10 | imm << 12 |
+                             opc << 22 | size << 30 | 0x38000000);
     }
 }
 
-__RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 opc, rasAddrReg amod,
-                rasReg rt) {
+__RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 opc, rasReg rm, rasExtend ext,
+                rasReg rn, rasReg rt) {
     CHECKR31(rt, 0);
-    CHECKR31(amod.rn, 1);
-    CHECKR31(amod.rm, 0);
-    rasAssert(!amod.ext.invalid, RAS_ERR_BAD_CONST);
-    rasAssert(amod.ext.type & 2, RAS_ERR_BAD_CONST);
-    rasAssert(amod.ext.amt == 0 || amod.ext.amt == size, RAS_ERR_BAD_CONST);
-    u32 s = amod.ext.amt != 0;
-    rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | s << 12 | amod.ext.type << 13 |
-                         amod.rm.idx << 16 | opc << 22 | size << 30 |
-                         0x38200800);
+    CHECKR31(rn, 1);
+    CHECKR31(rm, 0);
+    rasAssert(!ext.invalid, RAS_ERR_BAD_CONST);
+    rasAssert(ext.type & 2, RAS_ERR_BAD_CONST);
+    rasAssert(ext.amt == 0 || ext.amt == size, RAS_ERR_BAD_CONST);
+    u32 s = ext.amt != 0;
+    rasEmitWord(ctx, rt.idx | rn.idx << 5 | s << 12 | ext.type << 13 |
+                         rm.idx << 16 | opc << 22 | size << 30 | 0x38200800);
 }
 
 __RAS_EMIT_DECL(LoadLiteral, u32 opc, rasLabel l, rasReg rt) {
@@ -285,20 +267,18 @@ __RAS_EMIT_DECL(LoadLiteral, u32 opc, rasLabel l, rasReg rt) {
     rasEmitWord(ctx, rt.idx | opc << 30 | 0x18000000);
 }
 
-__RAS_EMIT_DECL(LoadStorePair, u32 opc, u32 l, rasAddrImm amod, rasReg rt2,
-                rasReg rt) {
+__RAS_EMIT_DECL(LoadStorePair, u32 opc, u32 mod, u32 l, s32 imm, rasReg rt2,
+                rasReg rn, rasReg rt) {
     CHECKR31(rt, 0);
     CHECKR31(rt2, 0);
-    CHECKR31(amod.rn, 1);
-    if (amod.mode == 0) amod.mode = 2;
+    CHECKR31(rn, 1);
     u32 size = (opc & 2) ? 3 : 2;
-    rasAssert(ISLOWBITS0(amod.imm, size), RAS_ERR_BAD_IMM);
-    amod.simm >>= size;
-    rasAssert(ISNBITSS(amod.imm, 7), RAS_ERR_BAD_IMM);
-    amod.imm &= MASK(7);
-    rasEmitWord(ctx, rt.idx | amod.rn.idx << 5 | rt2.idx << 10 |
-                         amod.imm << 15 | l << 22 | amod.mode << 23 |
-                         opc << 30 | 0x28000000);
+    rasAssert(ISLOWBITS0(imm, size), RAS_ERR_BAD_IMM);
+    imm >>= size;
+    rasAssert(ISNBITSS(imm, 7), RAS_ERR_BAD_IMM);
+    imm &= MASK(7);
+    rasEmitWord(ctx, rt.idx | rn.idx << 5 | rt2.idx << 10 | imm << 15 |
+                         l << 22 | mod << 23 | opc << 30 | 0x28000000);
 }
 
 __RAS_EMIT_DECL(BranchUncondImm, u32 op, rasLabel lab) {
