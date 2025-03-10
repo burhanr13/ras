@@ -369,7 +369,11 @@ void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
             addsub(sf, !op, s, rd, rn, imm >> 12, lsl(12));
         } else {
             imm = -imm;
-            mov(rtmp, imm);
+            if (sf) {
+                movx(rtmp, imm);
+            } else {
+                movw(rtmp, imm);
+            }
             addsub(sf, op, s, rd, rn, rtmp);
         }
     }
@@ -381,7 +385,11 @@ void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 sf, u32 opc, rasReg rd,
     if (rasGenerateLogicalImm(imm, sf, &immr, &imms, &n)) {
         logical(sf, opc, 0, rd, rn, imm);
     } else {
-        mov(rtmp, imm);
+        if (sf) {
+            movx(rtmp, imm);
+        } else {
+            movw(rtmp, imm);
+        }
         logical(sf, opc, 0, rd, rn, rtmp);
     }
 }

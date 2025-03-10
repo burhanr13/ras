@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "ras/ras.h"
+#define RAS_DEFAULT_SUFFIX w
 #include "ras/ras_macros.h"
 
 int main() {

@@ -5,6 +5,7 @@
 
 #include "ras/ras.h"
 #define RAS_CTX_VAR testCode
+#define RAS_DEFAULT_SUFFIX w
 #include "ras/ras_macros.h"
 
 void errorCb(rasError err) {

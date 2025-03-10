@@ -21,18 +21,7 @@
 // https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
 extern void* _ras_invalid_argument_type;
 #define __FORCE_INT(op)                                                        \
-    _Generic(op,                                                               \
-        signed char: op,                                                       \
-        unsigned char: op,                                                     \
-        unsigned short: op,                                                    \
-        signed short: op,                                                      \
-        unsigned int: op,                                                      \
-        signed int: op,                                                        \
-        unsigned long: op,                                                     \
-        signed long: op,                                                       \
-        unsigned long long: op,                                                \
-        signed long long: op,                                                  \
-        default: *(int*) _ras_invalid_argument_type)
+    _Generic(op, rasReg: *(int*) _ras_invalid_argument_type, default: op)
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 
@@ -229,7 +218,7 @@ extern void* _ras_invalid_argument_type;
 #define movzx(rd, imm, ...) movewide(1, 2, rd, imm, __VA_ARGS__)
 #define movkx(rd, imm, ...) movewide(1, 3, rd, imm, __VA_ARGS__)
 
-#define mov(rd, op2)                                                           \
+#define movw(rd, op2)                                                          \
     _Generic(op2,                                                              \
         rasReg: __EMIT(PseudoMovReg, 0, rd, __FORCE(rasReg, op2)),             \
         default: __EMIT(PseudoMovImm, 0, rd, __FORCE_INT(op2)))
@@ -238,6 +227,11 @@ extern void* _ras_invalid_argument_type;
         rasReg: __EMIT(PseudoMovReg, 1, rd, __FORCE(rasReg, op2)),             \
         default: __EMIT(PseudoMovImm, 1, rd, __FORCE_INT(op2)))
 
+#define __EXPAND_AMOD(amod) __EXPAND_AMOD1(__ID amod)
+#define __EXPAND_AMOD1(amod) __EXPAND_AMOD2(amod)
+#define __EXPAND_AMOD2(rn, ...) __EXPAND_AMOD3(rn, __VA_DFL(0, __VA_ARGS__))
+#define __EXPAND_AMOD3(rn, off, ...) rn, off __VA_OPT__(, ) __VA_ARGS__
+
 #define __MAKE_EXT(s)                                                          \
     _Generic(s,                                                                \
         rasShift: __EXT_OF_SHIFT(__FORCE(rasShift, s)),                        \
@@ -245,13 +239,10 @@ extern void* _ras_invalid_argument_type;
         default: *(rasExtend*) _ras_invalid_argument_type)
 #define __EXT_OF_SHIFT(s) ((rasExtend) {s.amt, 3, s.type != 0 || s.amt > 4})
 
-#define loadstore(size, opc, rt, amod) _loadstore(size, opc, rt, __ID amod)
+#define loadstore(size, opc, rt, amod)                                         \
+    _loadstore(size, opc, rt, __EXPAND_AMOD(amod))
 #define _loadstore(size, opc, rt, amod) __loadstore(size, opc, rt, amod)
-#define __loadstore(size, opc, rt, rn, ...)                                    \
-    ___loadstore(size, opc, rt, rn, __VA_DFL(0, __VA_ARGS__))
-#define ___loadstore(size, opc, rt, rn, off)                                   \
-    ____loadstore(size, opc, rt, rn, off)
-#define ____loadstore(size, opc, rt, rn, off, ...)                             \
+#define __loadstore(size, opc, rt, rn, off, ...)                               \
     _Generic(off,                                                              \
         rasReg: rasEmitLoadStoreRegOff,                                        \
         default: rasEmitLoadStoreImmOff)(                                      \
@@ -278,20 +269,16 @@ extern void* _ras_invalid_argument_type;
 
 #define loadliteral(opc, rt, l) __EMIT(LoadLiteral, opc, l, rt)
 
-#define ldrwl(rt, l) loadliteral(0, rt, l)
-#define ldrxl(rt, l) loadliteral(1, rt, l)
-#define ldrswxl(rt, l) loadliteral(2, rt, l)
-#define ldrswl(rt, l) ldrswxl(rt, l)
+#define ldrlw(rt, l) loadliteral(0, rt, l)
+#define ldrlx(rt, l) loadliteral(1, rt, l)
+#define ldrlswx(rt, l) loadliteral(2, rt, l)
+#define ldrlsw(rt, l) ldrlswx(rt, l)
 
 #define loadstorepair(opc, l, rt, rt2, amod)                                   \
-    _loadstorepair(opc, l, rt, rt2, __ID amod)
+    _loadstorepair(opc, l, rt, rt2, __EXPAND_AMOD(amod))
 #define _loadstorepair(opc, l, rt, rt2, amod)                                  \
     __loadstorepair(opc, l, rt, rt2, amod)
-#define __loadstorepair(opc, l, rt, rt2, rn, ...)                              \
-    ___loadstorepair(opc, l, rt, rt2, rn, __VA_DFL(0, __VA_ARGS__))
-#define ___loadstorepair(opc, l, rt, rt2, rn, off)                             \
-    ____loadstorepair(opc, l, rt, rt2, rn, off)
-#define ____loadstorepair(opc, l, rt, rt2, rn, off, ...)                       \
+#define __loadstorepair(opc, l, rt, rt2, rn, off, ...)                         \
     __EMIT(LoadStorePair, opc, __VA_DFL(2, __VA_ARGS__), l, off, rt2, rn, rt)
 
 #define stpw(rt, rt2, amod) loadstorepair(0, 0, rt, rt2, amod)
@@ -415,63 +402,71 @@ extern void* _ras_invalid_argument_type;
 #define zr ((rasReg) {31, 0})
 #define sp ((rasReg) {31, 1})
 
-#define add addw
-#define sub subw
-#define adds addsw
-#define subs subsw
-#define cmp cmpw
-#define cmn cmnw
-#define adc adcw
-#define sbc sbcw
-#define adcs adcsw
-#define sbcs sbcsw
-#define and andw
-#define bic bicw
-#define orr orrw
-#define orn ornw
-#define eor eorw
-#define eon eonw
-#define ands andsw
-#define bics bicsw
-#define mvn mvnw
-#define tst tstw
-#define rbit rbitw
-#define rev revw
+#ifdef RAS_DEFAULT_SUFFIX
+#define __CAT(x, y) ___CAT(x, y)
+#define ___CAT(x, y) x##y
+#define _(x) __CAT(x, RAS_DEFAULT_SUFFIX)
+
+#define add _(add)
+#define sub _(sub)
+#define adds _(adds)
+#define subs _(subs)
+#define cmp _(cmp)
+#define cmn _(cmn)
+#define adc _(adc)
+#define sbc _(sbc)
+#define adcs _(adcs)
+#define sbcs _(sbcs)
+#define and _(and)
+#define bic _(bic)
+#define orr _(orr)
+#define orn _(orn)
+#define eor _(eor)
+#define eon _(eon)
+#define ands _(ands)
+#define bics _(bics)
+#define mvn _(mvn)
+#define tst _(tst)
+#define rbit _(rbit)
+#define rev _(rev)
 #define rev16 rev16w
-#define clz clzw
-#define cls clsw
-#define udiv udivw
-#define sdiv sdivw
-#define lslv lslvw
-#define lsrv lsrvw
-#define asrv asrvw
-#define rorv rorvw
-#define madd maddw
-#define msub msubw
-#define mul mulw
-#define mneg mnegw
-#define csel cselw
-#define csinc csincw
-#define csinv csinvw
-#define csneg csnegw
-#define cmov cmovw
-#define cset csetw
-#define csetm csetmw
-#define cinc cincw
-#define cinv cinvw
-#define cneg cnegw
-#define extr extrw
-#define movn movnw
-#define movz movzw
-#define movk movkw
-#define ldrsb ldrsbw
-#define ldrsh ldrshw
-#define str strw
-#define ldr ldrw
-#define ldrl ldrwl
-#define stp stpw
-#define ldp ldpw
-#define cbz cbzw
-#define cbnz cbnzw
+#define clz _(clz)
+#define cls _(cls)
+#define udiv _(udiv)
+#define sdiv _(sdiv)
+#define lslv _(lslv)
+#define lsrv _(lsrv)
+#define asrv _(asrv)
+#define rorv _(rorv)
+#define madd _(madd)
+#define msub _(msub)
+#define mul _(mul)
+#define mneg _(mneg)
+#define csel _(csel)
+#define csinc _(csinc)
+#define csinv _(csinv)
+#define csneg _(csneg)
+#define cmov _(cmov)
+#define cset _(cset)
+#define csetm _(csetm)
+#define cinc _(cinc)
+#define cinv _(cinv)
+#define cneg _(cneg)
+#define extr _(extr)
+#define movn _(movn)
+#define movz _(movz)
+#define movk _(movk)
+#define mov _(mov)
+#define ldrsb _(ldrsb)
+#define ldrsh _(ldrsh)
+#define str _(str)
+#define ldr _(ldr)
+#define ldrl _(ldrl)
+#define stp _(stp)
+#define ldp _(ldp)
+#define cbz _(cbz)
+#define cbnz _(cbnz)
+
+#endif
 
 #endif
