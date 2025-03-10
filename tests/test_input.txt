@@ -28,6 +28,10 @@ adr(r0, l4);
 adr(r0, l6);
 L(l5);
 adrl(r0, l6);
+cbz(r0, l6);
+cbnz(r0, l5);
+cbzx(r0, l4);
+cbnzx(r0, l3);
 L(l6);
 
 add(r0, r1, 0x123);
@@ -134,6 +138,9 @@ cmov(r0, r1, eq);
 cincx(r0, r1, eq);
 cinv(r0, r1, eq);
 cnegx(r0, r1, eq);
+
+extr(r0, r1, r2, 20);
+extrx(r0, r1, r2, 50);
 
 movk(r0, 0x1234);
 movz(r0, 0x1234, lsl(16));

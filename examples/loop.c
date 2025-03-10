@@ -29,6 +29,8 @@ int main() {
     pop(fp, lr);
     ret();
 
+    
+
     rasReady(ctx);
 
     int (*f)(int) = rasGetCode(ctx);

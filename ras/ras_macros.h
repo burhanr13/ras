@@ -191,6 +191,12 @@ extern void* _ras_invalid_argument_type;
 #define cincx(rd, rm, cond) csincx(rd, rm, rm, (cond) ^ 1)
 #define cnegx(rd, rm, cond) csnegx(rd, rm, rm, (cond) ^ 1)
 
+#define extract(sf, op21, n, o0, rd, rn, rm, imms)                             \
+    __EMIT(Extract, sf, op21, n, o0, rm, imms, rn, rd)
+
+#define extr(rd, rn, rm, imms) extract(0, 0, 0, 0, rd, rn, rm, imms)
+#define extrx(rd, rn, rm, imms) extract(1, 0, 1, 0, rd, rn, rm, imms)
+
 #define lsl(s, ...) ((rasShift) {s, 0})
 #define lsr(s, ...) ((rasShift) {s, 1})
 #define asr(s, ...) ((rasShift) {s, 2})
@@ -306,6 +312,13 @@ extern void* _ras_invalid_argument_type;
     __VA_IF(branchcondimm(l, 0, __VA_ARGS__), branchuncondimm(0, l),           \
             __VA_ARGS__)
 #define bl(l) branchuncondimm(1, l)
+
+#define branchcompimm(sf, op, rt, l) __EMIT(BranchCompImm, sf, op, l, rt)
+
+#define cbz(rt, l) branchcompimm(0, 0, rt, l)
+#define cbnz(rt, l) branchcompimm(0, 1, rt, l)
+#define cbzx(rt, l) branchcompimm(1, 0, rt, l)
+#define cbnzx(rt, l) branchcompimm(1, 1, rt, l)
 
 #define branchreg(opc, op2, op3, op4, rn)                                      \
     __EMIT(BranchReg, opc, op2, op3, rn, op4)

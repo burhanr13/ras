@@ -215,6 +215,16 @@ __RAS_EMIT_DECL(PCRelAddr, u32 op, rasLabel lab, rasReg rd) {
     rasEmitWord(ctx, rd.idx | op << 31 | 0x10000000);
 }
 
+__RAS_EMIT_DECL(Extract, u32 sf, u32 op21, u32 n, u32 o0, rasReg rm, u32 imms,
+                rasReg rn, rasReg rd) {
+    CHECKR31(rd, 0);
+    CHECKR31(rn, 0);
+    CHECKR31(rm, 0);
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | imms << 10 | rm.idx << 16 |
+                         o0 << 21 | n << 22 | op21 << 29 | sf << 31 |
+                         0x13800000);
+}
+
 __RAS_EMIT_DECL(MoveWide, u32 sf, u32 opc, rasShift shift, u32 imm16,
                 rasReg rd) {
     CHECKR31(rd, 0);
@@ -289,6 +299,11 @@ __RAS_EMIT_DECL(BranchUncondImm, u32 op, rasLabel lab) {
 __RAS_EMIT_DECL(BranchCondImm, rasLabel lab, u32 o0, u32 cond) {
     rasAddPatch(ctx, RAS_PATCH_REL19, lab);
     rasEmitWord(ctx, cond | o0 << 4 | 0x54000000);
+}
+
+__RAS_EMIT_DECL(BranchCompImm, u32 sf, u32 op, rasLabel lab, rasReg rt) {
+    rasAddPatch(ctx, RAS_PATCH_REL19, lab);
+    rasEmitWord(ctx, rt.idx | op << 24 | sf << 31 | 0x34000000);
 }
 
 __RAS_EMIT_DECL(BranchReg, u32 opc, u32 op2, u32 op3, rasReg rn, u32 op4) {
