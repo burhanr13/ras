@@ -59,26 +59,26 @@ extern void* _ras_invalid_argument_type;
             default: __EMIT(AddSubImm, sf, op, s, __FORCE(rasShift, mod),      \
                             __FORCE_INT(op2), rn, rd)))
 
-#define add(rd, rn, op2, ...) addsub(0, 0, 0, rd, rn, op2, __VA_ARGS__)
-#define adds(rd, rn, op2, ...) addsub(0, 0, 1, rd, rn, op2, __VA_ARGS__)
-#define sub(rd, rn, op2, ...) addsub(0, 1, 0, rd, rn, op2, __VA_ARGS__)
-#define subs(rd, rn, op2, ...) addsub(0, 1, 1, rd, rn, op2, __VA_ARGS__)
+#define addw(rd, rn, op2, ...) addsub(0, 0, 0, rd, rn, op2, __VA_ARGS__)
+#define addsw(rd, rn, op2, ...) addsub(0, 0, 1, rd, rn, op2, __VA_ARGS__)
+#define subw(rd, rn, op2, ...) addsub(0, 1, 0, rd, rn, op2, __VA_ARGS__)
+#define subsw(rd, rn, op2, ...) addsub(0, 1, 1, rd, rn, op2, __VA_ARGS__)
 #define addx(rd, rn, op2, ...) addsub(1, 0, 0, rd, rn, op2, __VA_ARGS__)
 #define addsx(rd, rn, op2, ...) addsub(1, 0, 1, rd, rn, op2, __VA_ARGS__)
 #define subx(rd, rn, op2, ...) addsub(1, 1, 0, rd, rn, op2, __VA_ARGS__)
 #define subsx(rd, rn, op2, ...) addsub(1, 1, 1, rd, rn, op2, __VA_ARGS__)
-#define cmp(rn, op2, ...) subs(zr, rn, op2, __VA_ARGS__)
-#define cmn(rn, op2, ...) adds(zr, rn, op2, __VA_ARGS__)
+#define cmpw(rn, op2, ...) subs(zr, rn, op2, __VA_ARGS__)
+#define cmnw(rn, op2, ...) adds(zr, rn, op2, __VA_ARGS__)
 #define cmpx(rn, op2, ...) subsx(zr, rn, op2, __VA_ARGS__)
 #define cmnx(rn, op2, ...) addsx(zr, rn, op2, __VA_ARGS__)
 
 #define addsubcarry(sf, op, s, rd, rn, rm)                                     \
     __EMIT(AddSubCarry, sf, op, s, rm, rn, rd)
 
-#define adc(rd, rn, rm) addsubcarry(0, 0, 0, rd, rn, rm)
-#define sbc(rd, rn, rm) addsubcarry(0, 1, 0, rd, rn, rm)
-#define adcs(rd, rn, rm) addsubcarry(0, 0, 1, rd, rn, rm)
-#define sbcs(rd, rn, rm) addsubcarry(0, 1, 1, rd, rn, rm)
+#define adcw(rd, rn, rm) addsubcarry(0, 0, 0, rd, rn, rm)
+#define sbcw(rd, rn, rm) addsubcarry(0, 1, 0, rd, rn, rm)
+#define adcsw(rd, rn, rm) addsubcarry(0, 0, 1, rd, rn, rm)
+#define sbcsw(rd, rn, rm) addsubcarry(0, 1, 1, rd, rn, rm)
 #define adcx(rd, rn, rm) addsubcarry(1, 0, 0, rd, rn, rm)
 #define sbcx(rd, rn, rm) addsubcarry(1, 1, 0, rd, rn, rm)
 #define adcsx(rd, rn, rm) addsubcarry(1, 0, 1, rd, rn, rm)
@@ -98,14 +98,14 @@ extern void* _ras_invalid_argument_type;
             default: __EMIT(LogicalImm, sf, opc, __CINV(n, __FORCE_INT(op2)),  \
                             rn, rd)))
 
-#define and(rd, rn, op2, ...) logical(0, 0, 0, rd, rn, op2, __VA_ARGS__)
-#define bic(rd, rn, op2, ...) logical(0, 0, 1, rd, rn, op2, __VA_ARGS__)
-#define orr(rd, rn, op2, ...) logical(0, 1, 0, rd, rn, op2, __VA_ARGS__)
-#define orn(rd, rn, op2, ...) logical(0, 1, 1, rd, rn, op2, __VA_ARGS__)
-#define eor(rd, rn, op2, ...) logical(0, 2, 0, rd, rn, op2, __VA_ARGS__)
-#define eon(rd, rn, op2, ...) logical(0, 2, 1, rd, rn, op2, __VA_ARGS__)
-#define ands(rd, rn, op2, ...) logical(0, 3, 0, rd, rn, op2, __VA_ARGS__)
-#define bics(rd, rn, op2, ...) logical(0, 3, 1, rd, rn, op2, __VA_ARGS__)
+#define andw(rd, rn, op2, ...) logical(0, 0, 0, rd, rn, op2, __VA_ARGS__)
+#define bicw(rd, rn, op2, ...) logical(0, 0, 1, rd, rn, op2, __VA_ARGS__)
+#define orrw(rd, rn, op2, ...) logical(0, 1, 0, rd, rn, op2, __VA_ARGS__)
+#define ornw(rd, rn, op2, ...) logical(0, 1, 1, rd, rn, op2, __VA_ARGS__)
+#define eorw(rd, rn, op2, ...) logical(0, 2, 0, rd, rn, op2, __VA_ARGS__)
+#define eonw(rd, rn, op2, ...) logical(0, 2, 1, rd, rn, op2, __VA_ARGS__)
+#define andsw(rd, rn, op2, ...) logical(0, 3, 0, rd, rn, op2, __VA_ARGS__)
+#define bicsw(rd, rn, op2, ...) logical(0, 3, 1, rd, rn, op2, __VA_ARGS__)
 #define andx(rd, rn, op2, ...) logical(1, 0, 0, rd, rn, op2, __VA_ARGS__)
 #define bicx(rd, rn, op2, ...) logical(1, 0, 1, rd, rn, op2, __VA_ARGS__)
 #define orrx(rd, rn, op2, ...) logical(1, 1, 0, rd, rn, op2, __VA_ARGS__)
@@ -114,19 +114,19 @@ extern void* _ras_invalid_argument_type;
 #define eonx(rd, rn, op2, ...) logical(1, 2, 1, rd, rn, op2, __VA_ARGS__)
 #define andsx(rd, rn, op2, ...) logical(1, 3, 0, rd, rn, op2, __VA_ARGS__)
 #define bicsx(rd, rn, op2, ...) logical(1, 3, 1, rd, rn, op2, __VA_ARGS__)
-#define mvn(rn, rm) orn(rn, zr, rm)
-#define tst(rn, op2, ...) ands(zr, rn, op2, __VA_ARGS__)
+#define mvnw(rn, rm) ornw(rn, zr, rm)
+#define tstw(rn, op2, ...) andsw(zr, rn, op2, __VA_ARGS__)
 #define mvnx(rn, rm) ornx(rn, zr, rm)
 #define tstx(rn, op2, ...) andsx(zr, rn, op2, __VA_ARGS__)
 
 #define dataproc1source(sf, s, opcode2, opcode, rd, rn)                        \
     __EMIT(DataProc1Source, sf, s, opcode2, opcode, rn, rd)
 
-#define rbit(rd, rn) dataproc1source(0, 0, 0, 0, rd, rn)
-#define rev16(rd, rn) dataproc1source(0, 0, 0, 1, rd, rn)
-#define rev(rd, rn) dataproc1source(0, 0, 0, 2, rd, rn)
-#define clz(rd, rn) dataproc1source(0, 0, 0, 4, rd, rn)
-#define cls(rd, rn) dataproc1source(0, 0, 0, 5, rd, rn)
+#define rbitw(rd, rn) dataproc1source(0, 0, 0, 0, rd, rn)
+#define rev16w(rd, rn) dataproc1source(0, 0, 0, 1, rd, rn)
+#define revw(rd, rn) dataproc1source(0, 0, 0, 2, rd, rn)
+#define clzw(rd, rn) dataproc1source(0, 0, 0, 4, rd, rn)
+#define clsw(rd, rn) dataproc1source(0, 0, 0, 5, rd, rn)
 #define rbitx(rd, rn) dataproc1source(1, 0, 0, 0, rd, rn)
 #define rev16x(rd, rn) dataproc1source(1, 0, 0, 1, rd, rn)
 #define rev32x(rd, rn) dataproc1source(1, 0, 0, 2, rd, rn)
@@ -138,12 +138,12 @@ extern void* _ras_invalid_argument_type;
 #define dataproc2source(sf, s, opcode, rd, rn, rm)                             \
     __EMIT(DataProc2Source, sf, s, rm, opcode, rn, rd)
 
-#define udiv(rd, rn, rm) dataproc2source(0, 0, 2, rd, rn, rm)
-#define sdiv(rd, rn, rm) dataproc2source(0, 0, 3, rd, rn, rm)
-#define lslv(rd, rn, rm) dataproc2source(0, 0, 8, rd, rn, rm)
-#define lsrv(rd, rn, rm) dataproc2source(0, 0, 9, rd, rn, rm)
-#define asrv(rd, rn, rm) dataproc2source(0, 0, 10, rd, rn, rm)
-#define rorv(rd, rn, rm) dataproc2source(0, 0, 11, rd, rn, rm)
+#define udivw(rd, rn, rm) dataproc2source(0, 0, 2, rd, rn, rm)
+#define sdivw(rd, rn, rm) dataproc2source(0, 0, 3, rd, rn, rm)
+#define lslvw(rd, rn, rm) dataproc2source(0, 0, 8, rd, rn, rm)
+#define lsrvw(rd, rn, rm) dataproc2source(0, 0, 9, rd, rn, rm)
+#define asrvw(rd, rn, rm) dataproc2source(0, 0, 10, rd, rn, rm)
+#define rorvw(rd, rn, rm) dataproc2source(0, 0, 11, rd, rn, rm)
 #define udivx(rd, rn, rm) dataproc2source(1, 0, 2, rd, rn, rm)
 #define sdivx(rd, rn, rm) dataproc2source(1, 0, 3, rd, rn, rm)
 #define lslvx(rd, rn, rm) dataproc2source(1, 0, 8, rd, rn, rm)
@@ -154,14 +154,14 @@ extern void* _ras_invalid_argument_type;
 #define dataproc3source(sf, op54, op31, o0, rd, rn, rm, ra)                    \
     __EMIT(DataProc3Source, sf, op54, op31, rm, o0, ra, rn, rd)
 
-#define madd(rd, rn, rm, ra) dataproc3source(0, 0, 0, 0, rd, rn, rm, ra)
-#define msub(rd, rn, rm, ra) dataproc3source(0, 0, 0, 1, rd, rn, rm, ra)
+#define maddw(rd, rn, rm, ra) dataproc3source(0, 0, 0, 0, rd, rn, rm, ra)
+#define msubw(rd, rn, rm, ra) dataproc3source(0, 0, 0, 1, rd, rn, rm, ra)
 #define maddx(rd, rn, rm, ra) dataproc3source(1, 0, 0, 0, rd, rn, rm, ra)
 #define msubx(rd, rn, rm, ra) dataproc3source(1, 0, 0, 1, rd, rn, rm, ra)
 #define smaddl(rd, rn, rm, ra) dataproc3source(1, 0, 1, 0, rd, rn, rm, ra)
 #define umaddl(rd, rn, rm, ra) dataproc3source(1, 0, 5, 0, rd, rn, rm, ra)
-#define mul(rd, rn, rm) madd(rd, rn, rm, zr)
-#define mneg(rd, rn, rm) msub(rd, rn, rm, zr)
+#define mulw(rd, rn, rm) maddw(rd, rn, rm, zr)
+#define mnegw(rd, rn, rm) msubw(rd, rn, rm, zr)
 #define mulx(rd, rn, rm) maddx(rd, rn, rm, zr)
 #define mnegx(rd, rn, rm) msubx(rd, rn, rm, zr)
 #define smull(rd, rn, rm) smaddl(rd, rn, rm, zr)
@@ -170,20 +170,20 @@ extern void* _ras_invalid_argument_type;
 #define condselect(sf, op, s, op2, rd, rn, rm, cond)                           \
     __EMIT(CondSelect, sf, op, s, rm, cond, op2, rn, rd)
 
-#define csel(rd, rn, rm, cond) condselect(0, 0, 0, 0, rd, rn, rm, cond)
-#define csinc(rd, rn, rm, cond) condselect(0, 0, 0, 1, rd, rn, rm, cond)
-#define csinv(rd, rn, rm, cond) condselect(0, 1, 0, 0, rd, rn, rm, cond)
-#define csneg(rd, rn, rm, cond) condselect(0, 1, 0, 1, rd, rn, rm, cond)
+#define cselw(rd, rn, rm, cond) condselect(0, 0, 0, 0, rd, rn, rm, cond)
+#define csincw(rd, rn, rm, cond) condselect(0, 0, 0, 1, rd, rn, rm, cond)
+#define csinvw(rd, rn, rm, cond) condselect(0, 1, 0, 0, rd, rn, rm, cond)
+#define csnegw(rd, rn, rm, cond) condselect(0, 1, 0, 1, rd, rn, rm, cond)
 #define cselx(rd, rn, rm, cond) condselect(1, 0, 0, 0, rd, rn, rm, cond)
 #define csincx(rd, rn, rm, cond) condselect(1, 0, 0, 1, rd, rn, rm, cond)
 #define csinvx(rd, rn, rm, cond) condselect(1, 1, 0, 0, rd, rn, rm, cond)
 #define csnegx(rd, rn, rm, cond) condselect(1, 1, 0, 1, rd, rn, rm, cond)
-#define cmov(rd, rm, cond) csel(rd, rm, rd, cond)
-#define cset(rd, cond) csinc(rd, zr, zr, (cond) ^ 1)
-#define csetm(rd, cond) csinv(rd, zr, zr, (cond) ^ 1)
-#define cinv(rd, rm, cond) csinv(rd, rm, rm, (cond) ^ 1)
-#define cinc(rd, rm, cond) csinc(rd, rm, rm, (cond) ^ 1)
-#define cneg(rd, rm, cond) csneg(rd, rm, rm, (cond) ^ 1)
+#define cmovw(rd, rm, cond) cselw(rd, rm, rd, cond)
+#define csetw(rd, cond) csincw(rd, zr, zr, (cond) ^ 1)
+#define csetmw(rd, cond) csinvw(rd, zr, zr, (cond) ^ 1)
+#define cinvw(rd, rm, cond) csinvw(rd, rm, rm, (cond) ^ 1)
+#define cincw(rd, rm, cond) csincw(rd, rm, rm, (cond) ^ 1)
+#define cnegw(rd, rm, cond) csnegw(rd, rm, rm, (cond) ^ 1)
 #define cmovx(rd, rm, cond) cselx(rd, rm, rd, (cond) ^ 1)
 #define csetx(rd, cond) csincx(rd, zr, zr, (cond) ^ 1)
 #define csetmx(rd, cond) csinvx(rd, zr, zr, (cond) ^ 1)
@@ -194,7 +194,7 @@ extern void* _ras_invalid_argument_type;
 #define extract(sf, op21, n, o0, rd, rn, rm, imms)                             \
     __EMIT(Extract, sf, op21, n, o0, rm, imms, rn, rd)
 
-#define extr(rd, rn, rm, imms) extract(0, 0, 0, 0, rd, rn, rm, imms)
+#define extrw(rd, rn, rm, imms) extract(0, 0, 0, 0, rd, rn, rm, imms)
 #define extrx(rd, rn, rm, imms) extract(1, 0, 1, 0, rd, rn, rm, imms)
 
 #define lsl(s, ...) ((rasShift) {s, 0})
@@ -222,9 +222,9 @@ extern void* _ras_invalid_argument_type;
 #define movewide(sf, opc, rd, imm, ...)                                        \
     __EMIT(MoveWide, sf, opc, __VA_DFL(lsl(0), __VA_ARGS__), imm, rd)
 
-#define movn(rd, imm, ...) movewide(0, 0, rd, imm, __VA_ARGS__)
-#define movz(rd, imm, ...) movewide(0, 2, rd, imm, __VA_ARGS__)
-#define movk(rd, imm, ...) movewide(0, 3, rd, imm, __VA_ARGS__)
+#define movnw(rd, imm, ...) movewide(0, 0, rd, imm, __VA_ARGS__)
+#define movzw(rd, imm, ...) movewide(0, 2, rd, imm, __VA_ARGS__)
+#define movkw(rd, imm, ...) movewide(0, 3, rd, imm, __VA_ARGS__)
 #define movnx(rd, imm, ...) movewide(1, 0, rd, imm, __VA_ARGS__)
 #define movzx(rd, imm, ...) movewide(1, 2, rd, imm, __VA_ARGS__)
 #define movkx(rd, imm, ...) movewide(1, 3, rd, imm, __VA_ARGS__)
@@ -264,13 +264,13 @@ extern void* _ras_invalid_argument_type;
 #define strb(rt, amod) loadstore(0, 0, rt, amod)
 #define ldrb(rt, amod) loadstore(0, 1, rt, amod)
 #define ldrsbx(rt, amod) loadstore(0, 2, rt, amod)
-#define ldrsb(rt, amod) loadstore(0, 3, rt, amod)
+#define ldrsbw(rt, amod) loadstore(0, 3, rt, amod)
 #define strh(rt, amod) loadstore(1, 0, rt, amod)
 #define ldrh(rt, amod) loadstore(1, 1, rt, amod)
 #define ldrshx(rt, amod) loadstore(1, 2, rt, amod)
-#define ldrsh(rt, amod) loadstore(1, 3, rt, amod)
-#define str(rt, amod) loadstore(2, 0, rt, amod)
-#define ldr(rt, amod) loadstore(2, 1, rt, amod)
+#define ldrshw(rt, amod) loadstore(1, 3, rt, amod)
+#define strw(rt, amod) loadstore(2, 0, rt, amod)
+#define ldrw(rt, amod) loadstore(2, 1, rt, amod)
 #define ldrswx(rt, amod) loadstore(2, 2, rt, amod)
 #define strx(rt, amod) loadstore(3, 0, rt, amod)
 #define ldrx(rt, amod) loadstore(3, 1, rt, amod)
@@ -278,7 +278,7 @@ extern void* _ras_invalid_argument_type;
 
 #define loadliteral(opc, rt, l) __EMIT(LoadLiteral, opc, l, rt)
 
-#define ldrl(rt, l) loadliteral(0, rt, l)
+#define ldrwl(rt, l) loadliteral(0, rt, l)
 #define ldrxl(rt, l) loadliteral(1, rt, l)
 #define ldrswxl(rt, l) loadliteral(2, rt, l)
 #define ldrswl(rt, l) ldrswxl(rt, l)
@@ -294,8 +294,8 @@ extern void* _ras_invalid_argument_type;
 #define ____loadstorepair(opc, l, rt, rt2, rn, off, ...)                       \
     __EMIT(LoadStorePair, opc, __VA_DFL(2, __VA_ARGS__), l, off, rt2, rn, rt)
 
-#define stp(rt, rt2, amod) loadstorepair(0, 0, rt, rt2, amod)
-#define ldp(rt, rt2, amod) loadstorepair(0, 1, rt, rt2, amod)
+#define stpw(rt, rt2, amod) loadstorepair(0, 0, rt, rt2, amod)
+#define ldpw(rt, rt2, amod) loadstorepair(0, 1, rt, rt2, amod)
 #define ldpswx(rt, rt2, amod) loadstorepair(1, 1, rt, rt2, amod)
 #define stpx(rt, rt2, amod) loadstorepair(2, 0, rt, rt2, amod)
 #define ldpx(rt, rt2, amod) loadstorepair(2, 1, rt, rt2, amod)
@@ -315,8 +315,8 @@ extern void* _ras_invalid_argument_type;
 
 #define branchcompimm(sf, op, rt, l) __EMIT(BranchCompImm, sf, op, l, rt)
 
-#define cbz(rt, l) branchcompimm(0, 0, rt, l)
-#define cbnz(rt, l) branchcompimm(0, 1, rt, l)
+#define cbzw(rt, l) branchcompimm(0, 0, rt, l)
+#define cbnzw(rt, l) branchcompimm(0, 1, rt, l)
 #define cbzx(rt, l) branchcompimm(1, 0, rt, l)
 #define cbnzx(rt, l) branchcompimm(1, 1, rt, l)
 
@@ -414,5 +414,64 @@ extern void* _ras_invalid_argument_type;
 #define lr r30
 #define zr ((rasReg) {31, 0})
 #define sp ((rasReg) {31, 1})
+
+#define add addw
+#define sub subw
+#define adds addsw
+#define subs subsw
+#define cmp cmpw
+#define cmn cmnw
+#define adc adcw
+#define sbc sbcw
+#define adcs adcsw
+#define sbcs sbcsw
+#define and andw
+#define bic bicw
+#define orr orrw
+#define orn ornw
+#define eor eorw
+#define eon eonw
+#define ands andsw
+#define bics bicsw
+#define mvn mvnw
+#define tst tstw
+#define rbit rbitw
+#define rev revw
+#define rev16 rev16w
+#define clz clzw
+#define cls clsw
+#define udiv udivw
+#define sdiv sdivw
+#define lslv lslvw
+#define lsrv lsrvw
+#define asrv asrvw
+#define rorv rorvw
+#define madd maddw
+#define msub msubw
+#define mul mulw
+#define mneg mnegw
+#define csel cselw
+#define csinc csincw
+#define csinv csinvw
+#define csneg csnegw
+#define cmov cmovw
+#define cset csetw
+#define csetm csetmw
+#define cinc cincw
+#define cinv cinvw
+#define cneg cnegw
+#define extr extrw
+#define movn movnw
+#define movz movzw
+#define movk movkw
+#define ldrsb ldrsbw
+#define ldrsh ldrshw
+#define str strw
+#define ldr ldrw
+#define ldrl ldrwl
+#define stp stpw
+#define ldp ldpw
+#define cbz cbzw
+#define cbnz cbnzw
 
 #endif

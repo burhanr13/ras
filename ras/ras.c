@@ -391,17 +391,17 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
         if (sf) {
             movzx(rd, 0);
         } else {
-            movz(rd, 0);
+            movzw(rd, 0);
         }
         return;
     } else if (imm == ~0u && !sf) {
-        movn(rd, 0);
+        movnw(rd, 0);
         return;
     } else if (imm == ~0ull) {
         if (sf) {
             movnx(rd, 0);
         } else {
-            movn(rd, 0);
+            movnw(rd, 0);
         }
         return;
     }
@@ -411,7 +411,7 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
         if (sf) {
             orrx(rd, zr, imm);
         } else {
-            orr(rd, zr, imm);
+            orrw(rd, zr, imm);
         }
         return;
     }
@@ -455,13 +455,13 @@ void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm) {
         if (sf) {
             addx(rd, rm, 0);
         } else {
-            add(rd, rm, 0);
+            addw(rd, rm, 0);
         }
     } else {
         if (sf) {
             orrx(rd, zr, rm);
         } else {
-            orr(rd, zr, rm);
+            orrw(rd, zr, rm);
         }
     }
 }
