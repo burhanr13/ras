@@ -12,21 +12,15 @@ int main() {
     Label(lloop);
 
     push(fp, lr);
-
     mov(r1, 0);
-
     L(lloop);
     cmp(r0, 0);
     beq(lend);
-
     add(r1, r1, r0);
     sub(r0, r0, 1);
-
     b(lloop);
     L(lend);
-
-    add(r0, r1, 0);
-
+    mov(r0, r1);
     pop(fp, lr);
     ret();
 
