@@ -30,9 +30,7 @@ int main() {
 
     csh handle;
     cs_insn* insn;
-    cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);
-    cs_option(handle, CS_OPT_UNSIGNED, CS_OPT_OFF);
-    cs_option(handle, CS_OPT_DETAIL, CS_OPT_OFF);
+    cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);;
     // make sure capstone does not stop on invalid instructions
     cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
 

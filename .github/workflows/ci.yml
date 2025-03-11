@@ -6,22 +6,29 @@ on:
   pull_request:
 
 jobs:
-  ci:
-    strategy:
-      matrix:
-        os: [macos-lates, ubuntu-24.04-arm]
-    runs-on: ${{matrix.os}}
+  macos:
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
-    - if: ${{startsWith(matrix.os, 'macos')}}
+    - name: install capstone
       run: brew install capstone
-    - if: ${{startsWith(matrix.os, 'ubuntu')}}
-      run: sudo apt install libcapstone-dev
     - name: run tests
       run: |
         cd tests
         make
         bin/tests
+    - name: compile examples
+      run: |
+        cd examples
+        make
+  linux:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: compile tests
+      run: |
+        cd tests
+        make
     - name: compile examples
       run: |
         cd examples
