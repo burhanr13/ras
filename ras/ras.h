@@ -56,9 +56,9 @@ typedef struct {
     u8 invalid : 1;
 } rasExtend;
 
-typedef void (*rasErrorCallback)(rasError);
+typedef void (*rasErrorCallback)(rasError, void*);
 
-void rasSetErrorCallback(rasErrorCallback cb);
+void rasSetErrorCallback(rasErrorCallback cb, void* userdata);
 
 rasBlock* rasCreate(size_t initialSize);
 void rasDestroy(rasBlock* ctx);

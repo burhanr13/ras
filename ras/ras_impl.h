@@ -89,6 +89,7 @@ char* rasErrorStrings[RAS_ERR_MAX] = {
 };
 
 rasErrorCallback errorCallback = NULL;
+void* errorUserdata = NULL;
 
 static void* jit_alloc(size_t size) {
 #ifdef RAS_USE_RWX
@@ -134,8 +135,9 @@ static void jit_clearcache(void* code, size_t size) {
     __builtin___clear_cache(code, code + size);
 }
 
-void rasSetErrorCallback(rasErrorCallback cb) {
+void rasSetErrorCallback(rasErrorCallback cb, void* userdata) {
     errorCallback = cb;
+    errorUserdata = userdata;
 }
 
 rasBlock* rasCreate(size_t initialSize) {
@@ -277,7 +279,7 @@ void rasAssert(int condition, rasError err) {
 #ifndef RAS_NO_CHECKS
     if (!condition) {
         if (errorCallback) {
-            errorCallback(err);
+            errorCallback(err, errorUserdata);
         } else {
             fprintf(stderr, "ras error: %s\n", rasErrorStrings[err]);
             exit(1);

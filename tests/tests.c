@@ -14,7 +14,7 @@ void errorCb(rasError err) {
 }
 
 int main() {
-    rasSetErrorCallback(errorCb);
+    rasSetErrorCallback((rasErrorCallback) errorCb, NULL);
 
     rasBlock* testCode = rasCreate(16384);
 
