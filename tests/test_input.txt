@@ -210,6 +210,14 @@ strx(r0, (r1, r2, sxtw_(3)));
 ldr(r0, (r1, r2, lsl_(2)));
 ldrh(r0, (r1, r2, uxtw_(1)));
 
+strs(v0, (r1, r2, lsl_(2)));
+ldrs(v0, (r1, r2, sxtw_(2)));
+strq(v0, (r0, 0xfff0));
+strq(v0, (r0, r1, lsl_(4)));
+ldrq(v0, (r0, 0xfff0));
+pushv(v0);
+popv(v0);
+
 ldp(r0, r1, (r2));
 stp(r0, r1, (r2, 4));
 ldpswx(r0, r1, (r2, 0x80, pre));
@@ -218,9 +226,12 @@ stpx(r0, r1, (r2, -0x1f8));
 push(fp, lr);
 pop(fp, lr);
 
-nop();
+stpq(v0, v1, (r0, 0x20, post));
+ldpq(v0, v1, (r0, 0x20, post));
 
-br(r16);
-blr(r16);
+br(ip0);
+blr(ip0);
 ret();
-ret(r17);
+ret(ip1);
+
+nop();

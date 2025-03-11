@@ -288,55 +288,78 @@ extern void* _ras_invalid_argument_type;
         default: *(rasExtend*) _ras_invalid_argument_type)
 #define __EXT_OF_SHIFT(s) ((rasExtend) {s.amt, 3, s.type != 0 || s.amt > 4})
 
-#define loadstore(size, opc, rt, amod)                                         \
-    _loadstore(size, opc, rt, __EXPAND_AMOD(amod))
-#define _loadstore(size, opc, rt, amod) __loadstore(size, opc, rt, amod)
-#define __loadstore(size, opc, rt, rn, off, ...)                               \
+#define __V2R(vn) _Generic(vn, rasVReg: Reg((vn).idx))
+
+#define loadstore(vr, size, opc, rt, amod)                                     \
+    _loadstore(vr, size, opc, rt, __EXPAND_AMOD(amod))
+#define _loadstore(vr, size, opc, rt, amod) __loadstore(vr, size, opc, rt, amod)
+#define __loadstore(vr, size, opc, rt, rn, off, ...)                           \
     _Generic(off,                                                              \
         rasReg: rasEmitLoadStoreRegOff,                                        \
         default: rasEmitLoadStoreImmOff)(                                      \
-        RAS_CTX_VAR, size, opc, off,                                           \
+        RAS_CTX_VAR, size, vr, opc, off,                                       \
         _Generic(off,                                                          \
             rasReg: __MAKE_EXT(__VA_DFL(uxtx_(), __VA_ARGS__)),                \
             default: __VA_DFL(0, __VA_ARGS__)),                                \
         rn, rt)
 
-#define strb(rt, amod) loadstore(0, 0, rt, amod)
-#define ldrb(rt, amod) loadstore(0, 1, rt, amod)
-#define ldrsbx(rt, amod) loadstore(0, 2, rt, amod)
-#define ldrsbw(rt, amod) loadstore(0, 3, rt, amod)
-#define strh(rt, amod) loadstore(1, 0, rt, amod)
-#define ldrh(rt, amod) loadstore(1, 1, rt, amod)
-#define ldrshx(rt, amod) loadstore(1, 2, rt, amod)
-#define ldrshw(rt, amod) loadstore(1, 3, rt, amod)
-#define strw(rt, amod) loadstore(2, 0, rt, amod)
-#define ldrw(rt, amod) loadstore(2, 1, rt, amod)
-#define ldrswx(rt, amod) loadstore(2, 2, rt, amod)
-#define strx(rt, amod) loadstore(3, 0, rt, amod)
-#define ldrx(rt, amod) loadstore(3, 1, rt, amod)
+#define strb(rt, amod) loadstore(0, 0, 0, rt, amod)
+#define ldrb(rt, amod) loadstore(0, 0, 1, rt, amod)
+#define ldrsbx(rt, amod) loadstore(0, 0, 2, rt, amod)
+#define ldrsbw(rt, amod) loadstore(0, 0, 3, rt, amod)
+#define strh(rt, amod) loadstore(0, 1, 0, rt, amod)
+#define ldrh(rt, amod) loadstore(0, 1, 1, rt, amod)
+#define ldrshx(rt, amod) loadstore(0, 1, 2, rt, amod)
+#define ldrshw(rt, amod) loadstore(0, 1, 3, rt, amod)
+#define strw(rt, amod) loadstore(0, 2, 0, rt, amod)
+#define ldrw(rt, amod) loadstore(0, 2, 1, rt, amod)
+#define ldrswx(rt, amod) loadstore(0, 2, 2, rt, amod)
+#define strx(rt, amod) loadstore(0, 3, 0, rt, amod)
+#define ldrx(rt, amod) loadstore(0, 3, 1, rt, amod)
 #define ldrsw(rt, amod) ldrswx(rt, amod)
 
-#define loadliteral(opc, rt, l) __EMIT(LoadLiteral, opc, l, rt)
+#define strs(vt, amod) loadstore(1, 2, 0, __V2R(vt), amod)
+#define ldrs(vt, amod) loadstore(1, 2, 1, __V2R(vt), amod)
+#define strd(vt, amod) loadstore(1, 3, 0, __V2R(vt), amod)
+#define ldrd(vt, amod) loadstore(1, 3, 1, __V2R(vt), amod)
+#define strq(vt, amod) loadstore(1, 0, 2, __V2R(vt), amod)
+#define ldrq(vt, amod) loadstore(1, 0, 3, __V2R(vt), amod)
+#define pushv(vt) strq(vt, (sp, -0x10, pre))
+#define popv(vt) ldrq(vt, (sp, 0x10, post))
 
-#define ldrlw(rt, l) loadliteral(0, rt, l)
-#define ldrlx(rt, l) loadliteral(1, rt, l)
-#define ldrlswx(rt, l) loadliteral(2, rt, l)
+#define loadliteral(vr, opc, rt, l) __EMIT(LoadLiteral, opc, vr, l, rt)
+
+#define ldrlw(rt, l) loadliteral(0, 0, rt, l)
+#define ldrlx(rt, l) loadliteral(0, 1, rt, l)
+#define ldrlswx(rt, l) loadliteral(0, 2, rt, l)
 #define ldrlsw(rt, l) ldrlswx(rt, l)
 
-#define loadstorepair(opc, l, rt, rt2, amod)                                   \
-    _loadstorepair(opc, l, rt, rt2, __EXPAND_AMOD(amod))
-#define _loadstorepair(opc, l, rt, rt2, amod)                                  \
-    __loadstorepair(opc, l, rt, rt2, amod)
-#define __loadstorepair(opc, l, rt, rt2, rn, off, ...)                         \
-    __EMIT(LoadStorePair, opc, __VA_DFL(2, __VA_ARGS__), l, off, rt2, rn, rt)
+#define ldrls(vt, l) loadliteral(1, 0, __V2R(vt), l)
+#define ldrld(vt, l) loadliteral(1, 1, __V2R(vt), l)
+#define ldrlq(vt, l) loadliteral(1, 2, __V2R(vt), l)
 
-#define stpw(rt, rt2, amod) loadstorepair(0, 0, rt, rt2, amod)
-#define ldpw(rt, rt2, amod) loadstorepair(0, 1, rt, rt2, amod)
-#define ldpswx(rt, rt2, amod) loadstorepair(1, 1, rt, rt2, amod)
-#define stpx(rt, rt2, amod) loadstorepair(2, 0, rt, rt2, amod)
-#define ldpx(rt, rt2, amod) loadstorepair(2, 1, rt, rt2, amod)
+#define loadstorepair(vr, opc, l, rt, rt2, amod)                               \
+    _loadstorepair(vr, opc, l, rt, rt2, __EXPAND_AMOD(amod))
+#define _loadstorepair(vr, opc, l, rt, rt2, amod)                              \
+    __loadstorepair(vr, opc, l, rt, rt2, amod)
+#define __loadstorepair(vr, opc, l, rt, rt2, rn, off, ...)                     \
+    __EMIT(LoadStorePair, opc, vr, __VA_DFL(2, __VA_ARGS__), l, off, rt2, rn,  \
+           rt)
+
+#define stpw(rt, rt2, amod) loadstorepair(0, 0, 0, rt, rt2, amod)
+#define ldpw(rt, rt2, amod) loadstorepair(0, 0, 1, rt, rt2, amod)
+#define ldpswx(rt, rt2, amod) loadstorepair(0, 1, 1, rt, rt2, amod)
+#define stpx(rt, rt2, amod) loadstorepair(0, 2, 0, rt, rt2, amod)
+#define ldpx(rt, rt2, amod) loadstorepair(0, 2, 1, rt, rt2, amod)
 #define push(rt, rt2) stpx(rt, rt2, (sp, -0x10, pre))
 #define pop(rt, rt2) ldpx(rt, rt2, (sp, 0x10, post))
+
+#define stps(vt, vt2, amod) loadstorepair(1, 0, 0, __V2R(vt), __V2R(vt2), amod)
+#define ldps(vt, vt2, amod) loadstorepair(1, 0, 1, __V2R(vt), __V2R(vt2), amod)
+#define stpd(vt, vt2, amod) loadstorepair(1, 1, 0, __V2R(vt), __V2R(vt2), amod)
+#define ldpd(vt, vt2, amod) loadstorepair(1, 1, 1, __V2R(vt), __V2R(vt2), amod)
+#define stpq(vt, vt2, amod) loadstorepair(1, 2, 0, __V2R(vt), __V2R(vt2), amod)
+#define ldpq(vt, vt2, amod) loadstorepair(1, 2, 1, __V2R(vt), __V2R(vt2), amod)
 
 #define post 1
 #define pre 3
@@ -450,6 +473,41 @@ extern void* _ras_invalid_argument_type;
 #define lr r30
 #define zr ((rasReg) {31, 0})
 #define sp ((rasReg) {31, 1})
+
+#define VReg(n) ((rasVReg) {n})
+
+#define v0 VReg(0)
+#define v1 VReg(1)
+#define v2 VReg(2)
+#define v3 VReg(3)
+#define v4 VReg(4)
+#define v5 VReg(5)
+#define v6 VReg(6)
+#define v7 VReg(7)
+#define v8 VReg(8)
+#define v9 VReg(9)
+#define v10 VReg(10)
+#define v11 VReg(11)
+#define v12 VReg(12)
+#define v13 VReg(13)
+#define v14 VReg(14)
+#define v15 VReg(15)
+#define v16 VReg(16)
+#define v17 VReg(17)
+#define v18 VReg(18)
+#define v19 VReg(19)
+#define v20 VReg(20)
+#define v21 VReg(21)
+#define v22 VReg(22)
+#define v23 VReg(23)
+#define v24 VReg(24)
+#define v25 VReg(25)
+#define v26 VReg(26)
+#define v27 VReg(27)
+#define v28 VReg(28)
+#define v29 VReg(29)
+#define v30 VReg(30)
+#define v31 VReg(31)
 
 #ifdef RAS_DEFAULT_SUFFIX
 #define __CAT(x, y) ___CAT(x, y)

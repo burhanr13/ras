@@ -198,6 +198,13 @@ str w0, [x1, w2, uxtw]
 str x0, [x1, w2, sxtw #3]
 ldr w0, [x1, x2, lsl #2]
 ldrh w0, [x1, w2, uxtw #1]
+str s0, [x1, x2, lsl #2]
+ldr s0, [x1, w2, sxtw #2]
+str q0, [x0, #0xfff0]
+str q0, [x0, x1, lsl #4]
+ldr q0, [x0, #0xfff0]
+str q0, [sp, #-0x10]!
+ldr q0, [sp], #0x10
 ldp w0, w1, [x2]
 stp w0, w1, [x2, #4]
 ldpsw x0, x1, [x2, #0x80]!
@@ -205,8 +212,10 @@ ldp x0, x1, [x2], #-0x40
 stp x0, x1, [x2, #-0x1f8]
 stp x29, x30, [sp, #-0x10]!
 ldp x29, x30, [sp], #0x10
-nop 
+stp q0, q1, [x0], #0x20
+ldp q0, q1, [x0], #0x20
 br x16
 blr x16
 ret 
 ret x17
+nop 

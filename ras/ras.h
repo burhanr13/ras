@@ -38,9 +38,13 @@ typedef enum {
 extern char* rasErrorStrings[];
 
 typedef struct {
-    u16 idx : 5;
-    u16 isSp : 1;
+    u8 idx : 5;
+    u8 isSp : 1;
 } rasReg;
+
+typedef struct {
+    u8 idx : 5;
+} rasVReg;
 
 typedef struct {
     u8 amt : 6;
@@ -253,54 +257,58 @@ __RAS_EMIT_DECL(MoveWide, u32 sf, u32 opc, rasShift shift, u32 imm16,
                          0x12800000);
 }
 
-__RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, u32 imm, u32 mod, rasReg rn,
-                rasReg rt) {
+__RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 vr, u32 opc, u32 imm, u32 mod,
+                rasReg rn, rasReg rt) {
     RAS_CHECKR31(rt, 0);
     RAS_CHECKR31(rn, 1);
-    if (mod == 0 && RAS_ISLOWBITS0(imm, size) &&
-        RAS_ISNBITSU(imm >> size, 12)) {
-        imm >>= size;
+    u32 scale = (vr && (opc & 2)) ? 4 : size;
+    if (mod == 0 && RAS_ISLOWBITS0(imm, scale) &&
+        RAS_ISNBITSU(imm >> scale, 12)) {
+        imm >>= scale;
         rasEmitWord(ctx, rt.idx | rn.idx << 5 | imm << 10 | opc << 22 |
-                             size << 30 | 0x39000000);
+                             vr << 26 | size << 30 | 0x39000000);
     } else {
         rasAssert(RAS_ISNBITSS(imm, 9), RAS_ERR_BAD_IMM);
         imm &= RAS_MASK(9);
         rasEmitWord(ctx, rt.idx | rn.idx << 5 | mod << 10 | imm << 12 |
-                             opc << 22 | size << 30 | 0x38000000);
+                             opc << 22 | vr << 26 | size << 30 | 0x38000000);
     }
 }
 
-__RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 opc, rasReg rm, rasExtend ext,
-                rasReg rn, rasReg rt) {
+__RAS_EMIT_DECL(LoadStoreRegOff, u32 size, u32 vr, u32 opc, rasReg rm,
+                rasExtend ext, rasReg rn, rasReg rt) {
     RAS_CHECKR31(rt, 0);
     RAS_CHECKR31(rn, 1);
     RAS_CHECKR31(rm, 0);
     rasAssert(!ext.invalid, RAS_ERR_BAD_CONST);
     rasAssert(ext.type & 2, RAS_ERR_BAD_CONST);
-    rasAssert(ext.amt == 0 || ext.amt == size, RAS_ERR_BAD_CONST);
+    u32 scale = (vr && (opc & 2)) ? 4 : size;
+    rasAssert(ext.amt == 0 || ext.amt == scale, RAS_ERR_BAD_CONST);
     u32 s = ext.amt != 0;
     rasEmitWord(ctx, rt.idx | rn.idx << 5 | s << 12 | ext.type << 13 |
-                         rm.idx << 16 | opc << 22 | size << 30 | 0x38200800);
+                         rm.idx << 16 | opc << 22 | vr << 26 | size << 30 |
+                         0x38200800);
 }
 
-__RAS_EMIT_DECL(LoadLiteral, u32 opc, rasLabel l, rasReg rt) {
+__RAS_EMIT_DECL(LoadLiteral, u32 opc, u32 vr, rasLabel l, rasReg rt) {
     RAS_CHECKR31(rt, 0);
     rasAddPatch(ctx, RAS_PATCH_REL19, l);
-    rasEmitWord(ctx, rt.idx | opc << 30 | 0x18000000);
+    rasEmitWord(ctx, rt.idx | vr << 26 | opc << 30 | 0x18000000);
 }
 
-__RAS_EMIT_DECL(LoadStorePair, u32 opc, u32 mod, u32 l, s32 imm, rasReg rt2,
-                rasReg rn, rasReg rt) {
+__RAS_EMIT_DECL(LoadStorePair, u32 opc, u32 vr, u32 mod, u32 l, s32 imm,
+                rasReg rt2, rasReg rn, rasReg rt) {
     RAS_CHECKR31(rt, 0);
     RAS_CHECKR31(rt2, 0);
     RAS_CHECKR31(rn, 1);
-    u32 size = (opc & 2) ? 3 : 2;
+    u32 size = vr ? (opc == 3 ? 4 : opc + 2) : (opc & 2) ? 3 : 2;
     rasAssert(RAS_ISLOWBITS0(imm, size), RAS_ERR_BAD_IMM);
     imm >>= size;
     rasAssert(RAS_ISNBITSS(imm, 7), RAS_ERR_BAD_IMM);
     imm &= RAS_MASK(7);
     rasEmitWord(ctx, rt.idx | rn.idx << 5 | rt2.idx << 10 | imm << 15 |
-                         l << 22 | mod << 23 | opc << 30 | 0x28000000);
+                         l << 22 | mod << 23 | vr << 26 | opc << 30 |
+                         0x28000000);
 }
 
 __RAS_EMIT_DECL(BranchUncondImm, u32 op, rasLabel lab) {
