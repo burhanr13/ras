@@ -282,7 +282,7 @@ void rasAssert(int condition, rasError err) {
             errorCallback(err, errorUserdata);
         } else {
             fprintf(stderr, "ras error: %s\n", rasErrorStrings[err]);
-            exit(1);
+            abort();
         }
     }
 #endif
