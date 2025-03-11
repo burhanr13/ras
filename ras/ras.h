@@ -4,14 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef int8_t s8;
-typedef uint8_t u8;
-typedef int16_t s16;
-typedef uint16_t u16;
-typedef int32_t s32;
-typedef uint32_t u32;
-typedef int64_t s64;
-typedef uint64_t u64;
+#define u8 uint8_t
+#define u16 uint16_t
+#define u32 uint32_t
+#define s32 int32_t
+#define u64 uint64_t
 
 typedef struct _rasBlock rasBlock;
 
@@ -347,6 +344,12 @@ void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm);
 void rasEmitPseudoShiftImm(rasBlock* ctx, u32 sf, u32 type, rasReg rd,
                            rasReg rn, u32 imm);
 void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasReg rd, rasLabel lab);
+
+#undef u8
+#undef u16
+#undef u32
+#undef s32
+#undef u64
 
 #endif
 
