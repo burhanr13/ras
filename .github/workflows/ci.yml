@@ -13,6 +13,10 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v4
+    - if: ${{startsWith(matrix.os, 'macos')}}
+      run: brew install capstone
+    - if: ${{startsWith(matrix.os, 'ubuntu')}}
+      run: sudo apt install libcapstone-dev
     - name: run tests
       run: |
         cd tests
