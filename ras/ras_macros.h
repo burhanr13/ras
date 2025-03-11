@@ -118,11 +118,10 @@ extern void* _ras_invalid_argument_type;
 #define clsw(rd, rn) dataproc1source(0, 0, 0, 5, rd, rn)
 #define rbitx(rd, rn) dataproc1source(1, 0, 0, 0, rd, rn)
 #define rev16x(rd, rn) dataproc1source(1, 0, 0, 1, rd, rn)
-#define rev32x(rd, rn) dataproc1source(1, 0, 0, 2, rd, rn)
+#define rev32(rd, rn) dataproc1source(1, 0, 0, 2, rd, rn)
 #define revx(rd, rn) dataproc1source(1, 0, 0, 3, rd, rn)
 #define clzx(rd, rn) dataproc1source(1, 0, 0, 4, rd, rn)
 #define clsx(rd, rn) dataproc1source(1, 0, 0, 5, rd, rn)
-#define rev32(rd, rn) rev32x(rd, rn)
 
 #define dataproc2source(sf, s, opcode, rd, rn, rm)                             \
     __EMIT(DataProc2Source, sf, s, rm, opcode, rn, rd)
@@ -237,12 +236,12 @@ extern void* _ras_invalid_argument_type;
 
 #define uxtb_(rd, rn) ubfxw(rd, rn, 0, 8)
 #define uxth_(rd, rn) ubfxw(rd, rn, 0, 16)
+#define uxtw_(rd, rn) ubfxx(rd, rn, 0, 32)
 #define sxtbw(rd, rn) sbfxw(rd, rn, 0, 8)
 #define sxtbx(rd, rn) sbfxx(rd, rn, 0, 8)
 #define sxthw(rd, rn) sbfxw(rd, rn, 0, 16)
 #define sxthx(rd, rn) sbfxx(rd, rn, 0, 16)
 #define sxtw_(rd, rn) sbfxx(rd, rn, 0, 32)
-#define sxtwx(rd, rn) sxtw_(rd, rn)
 
 #define _extend(t, name, ...) __extend(t, name, __VA_DFL(0, __VA_ARGS__))
 #define __extend(t, name, op) ___extend(t, name, op)
@@ -321,10 +320,9 @@ extern void* _ras_invalid_argument_type;
 #define ldrshw(rt, amod) loadstore(0, 1, 3, rt, amod)
 #define strw(rt, amod) loadstore(0, 2, 0, rt, amod)
 #define ldrw(rt, amod) loadstore(0, 2, 1, rt, amod)
-#define ldrswx(rt, amod) loadstore(0, 2, 2, rt, amod)
+#define ldrsw(rt, amod) loadstore(0, 2, 2, rt, amod)
 #define strx(rt, amod) loadstore(0, 3, 0, rt, amod)
 #define ldrx(rt, amod) loadstore(0, 3, 1, rt, amod)
-#define ldrsw(rt, amod) ldrswx(rt, amod)
 
 #define strs(vt, amod) loadstore(1, 2, 0, __V2R(vt), amod)
 #define ldrs(vt, amod) loadstore(1, 2, 1, __V2R(vt), amod)
@@ -339,8 +337,7 @@ extern void* _ras_invalid_argument_type;
 
 #define ldrlw(rt, l) loadliteral(0, 0, rt, l)
 #define ldrlx(rt, l) loadliteral(0, 1, rt, l)
-#define ldrlswx(rt, l) loadliteral(0, 2, rt, l)
-#define ldrlsw(rt, l) ldrlswx(rt, l)
+#define ldrlsw(rt, l) loadliteral(0, 2, rt, l)
 
 #define ldrls(vt, l) loadliteral(1, 0, __V2R(vt), l)
 #define ldrld(vt, l) loadliteral(1, 1, __V2R(vt), l)
@@ -356,7 +353,7 @@ extern void* _ras_invalid_argument_type;
 
 #define stpw(rt, rt2, amod) loadstorepair(0, 0, 0, rt, rt2, amod)
 #define ldpw(rt, rt2, amod) loadstorepair(0, 0, 1, rt, rt2, amod)
-#define ldpswx(rt, rt2, amod) loadstorepair(0, 1, 1, rt, rt2, amod)
+#define ldpsw(rt, rt2, amod) loadstorepair(0, 1, 1, rt, rt2, amod)
 #define stpx(rt, rt2, amod) loadstorepair(0, 2, 0, rt, rt2, amod)
 #define ldpx(rt, rt2, amod) loadstorepair(0, 2, 1, rt, rt2, amod)
 #define push(rt, rt2) stpx(rt, rt2, (sp, -0x10, pre))
