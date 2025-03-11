@@ -31,8 +31,11 @@ int main() {
     csh handle;
     cs_insn* insn;
     cs_open(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, &handle);
+    cs_option(handle, CS_OPT_UNSIGNED, CS_OPT_OFF);
+    cs_option(handle, CS_OPT_DETAIL, CS_OPT_OFF);
     // make sure capstone does not stop on invalid instructions
     cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
+
     size_t count = cs_disasm(handle, rasGetCode(testCode), rasGetSize(testCode),
                              0, 0, &insn);
     for (size_t i = 0; i < count; i++) {
