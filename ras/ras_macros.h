@@ -443,8 +443,8 @@ extern void* _ras_invalid_argument_type;
 #define r28 Reg(28)
 #define r29 Reg(29)
 #define r30 Reg(30)
-#define ip1 r16
-#define ip2 r17
+#define ip0 r16
+#define ip1 r17
 #define fp r29
 #define lr r30
 #define zr ((rasReg) {31, 0})
