@@ -288,6 +288,7 @@ void rasAssert(int condition, rasError err) {
 #endif
 }
 
+#ifdef RAS_AUTOGROW
 static void ras_grow(rasBlock* ctx) {
     u32* oldCode = ctx->code;
     size_t oldSize = ctx->size;
@@ -297,6 +298,7 @@ static void ras_grow(rasBlock* ctx) {
     memcpy(ctx->code, oldCode, 4 * oldSize);
     jit_free(oldCode, 4 * oldSize);
 }
+#endif
 
 void rasEmitWord(rasBlock* ctx, u32 w) {
 #ifdef RAS_AUTOGROW
