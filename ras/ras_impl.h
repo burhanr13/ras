@@ -392,13 +392,13 @@ void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
     if (ISNBITSU(imm, 12)) {
         addsub(sf, op, s, rd, rn, imm);
     } else if (ISNBITSU(imm, 24) && ISLOWBITS0(imm, 12)) {
-        addsub(sf, op, s, rd, rn, imm >> 12, lsl_(12));
+        addsub(sf, op, s, rd, rn, imm >> 12, lsl(12));
     } else {
         imm = -imm;
         if (ISNBITSU(imm, 12)) {
             addsub(sf, !op, s, rd, rn, imm);
         } else if (ISNBITSU(imm, 24) && ISLOWBITS0(imm, 12)) {
-            addsub(sf, !op, s, rd, rn, imm >> 12, lsl_(12));
+            addsub(sf, !op, s, rd, rn, imm >> 12, lsl(12));
         } else {
             imm = -imm;
             if (sf) {
@@ -485,7 +485,7 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
             } else {
                 opc = 3;
             }
-            movewide(sf, opc, rd, hw, lsl_(16 * i));
+            movewide(sf, opc, rd, hw, lsl(16 * i));
         }
     }
 }

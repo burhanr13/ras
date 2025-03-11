@@ -32,7 +32,7 @@ extern void* _ras_invalid_argument_type;
         default: __EMIT(Dword, __FORCE_INT(d)))
 
 #define addsub(sf, op, s, rd, rn, op2, ...)                                    \
-    _addsub(sf, op, s, rd, rn, op2, __VA_DFL(lsl_(0), __VA_ARGS__))
+    _addsub(sf, op, s, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
 #define _addsub(sf, op, s, rd, rn, op2, mod)                                   \
     _Generic(op2,                                                              \
         rasReg: _Generic(mod,                                                  \
@@ -76,7 +76,7 @@ extern void* _ras_invalid_argument_type;
 #define __CINV(n, v) ((n) ? ~(v) : (v))
 
 #define logical(sf, opc, n, rd, rn, op2, ...)                                  \
-    _logical(sf, opc, n, rd, rn, op2, __VA_DFL(lsl_(0), __VA_ARGS__))
+    _logical(sf, opc, n, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
 #define _logical(sf, opc, n, rd, rn, op2, mod)                                 \
     _Generic(op2,                                                              \
         rasReg: __EMIT(LogicalReg, sf, opc, n, __FORCE(rasShift, mod),         \
@@ -225,31 +225,39 @@ extern void* _ras_invalid_argument_type;
 #define asrx(rd, rn, op2) shift(1, 2, rd, rn, op2)
 #define rorx(rd, rn, op2) shift(1, 3, rd, rn, op2)
 
-#define uxtb(rd, rn) ubfxw(rd, rn, 0, 8)
-#define uxth(rd, rn) ubfxw(rd, rn, 0, 16)
+#define _shift(t, name, op, ...)                                               \
+    __VA_IF(__shift(name, op, __VA_DFL(0, __VA_ARGS__)), ((rasShift) {op, t}), \
+            __VA_ARGS__)
+#define __shift(name, op, op1) ___shift(name, op, op1)
+#define ___shift(name, op, op1, ...) name(op, op1, __VA_ARGS__)
+
+#define lsl(op, ...) _shift(0, lsl_, op __VA_OPT__(, ) __VA_ARGS__)
+#define lsr(op, ...) _shift(1, lsr_, op __VA_OPT__(, ) __VA_ARGS__)
+#define asr(op, ...) _shift(2, asr_, op __VA_OPT__(, ) __VA_ARGS__)
+
+#define uxtb_(rd, rn) ubfxw(rd, rn, 0, 8)
+#define uxth_(rd, rn) ubfxw(rd, rn, 0, 16)
 #define sxtbw(rd, rn) sbfxw(rd, rn, 0, 8)
 #define sxtbx(rd, rn) sbfxx(rd, rn, 0, 8)
 #define sxthw(rd, rn) sbfxw(rd, rn, 0, 16)
 #define sxthx(rd, rn) sbfxx(rd, rn, 0, 16)
-#define sxtw(rd, rn) sbfxx(rd, rn, 0, 32)
-#define sxtwx(rd, rn) sxtw(rd, rn)
+#define sxtw_(rd, rn) sbfxx(rd, rn, 0, 32)
+#define sxtwx(rd, rn) sxtw_(rd, rn)
 
-#define shiftmod(t, amt) ((rasShift) {amt, t})
+#define _extend(t, name, ...) __extend(t, name, __VA_DFL(0, __VA_ARGS__))
+#define __extend(t, name, op) ___extend(t, name, op)
+#define ___extend(t, name, op, ...)                                            \
+    __VA_IF(name(op, __VA_DFL(0, __VA_ARGS__)), ((rasExtend) {op, t}),         \
+            __VA_ARGS__)
 
-#define lsl_(amt) shiftmod(0, amt)
-#define lsr_(amt) shiftmod(1, amt)
-#define asr_(amt) shiftmod(2, amt)
-
-#define extendmod(type, ...) ((rasExtend) {__VA_DFL(0, __VA_ARGS__), type})
-
-#define uxtb_(...) extendmod(0, __VA_ARGS__)
-#define uxth_(...) extendmod(1, __VA_ARGS__)
-#define uxtw_(...) extendmod(2, __VA_ARGS__)
-#define uxtx_(...) extendmod(3, __VA_ARGS__)
-#define sxtb_(...) extendmod(4, __VA_ARGS__)
-#define sxth_(...) extendmod(5, __VA_ARGS__)
-#define sxtw_(...) extendmod(6, __VA_ARGS__)
-#define sxtx_(...) extendmod(7, __VA_ARGS__)
+#define uxtb(...) _extend(0, uxtb_, __VA_ARGS__)
+#define uxth(...) _extend(1, uxth_, __VA_ARGS__)
+#define uxtw(...) _extend(2, uxtw_, __VA_ARGS__)
+#define uxtx(...) _extend(3, movx, __VA_ARGS__)
+#define sxtb(...) _extend(4, sxtb_, __VA_ARGS__)
+#define sxth(...) _extend(5, sxth_, __VA_ARGS__)
+#define sxtw(...) _extend(6, sxtw_, __VA_ARGS__)
+#define sxtx(...) _extend(7, movx, __VA_ARGS__)
 
 #define pcreladdr(op, rd, l) __EMIT(PCRelAddr, op, l, rd)
 
@@ -258,7 +266,7 @@ extern void* _ras_invalid_argument_type;
 #define adrl(rd, l) __EMIT(PseudoPCRelAddrLong, rd, l)
 
 #define movewide(sf, opc, rd, imm, ...)                                        \
-    __EMIT(MoveWide, sf, opc, __VA_DFL(lsl_(0), __VA_ARGS__), imm, rd)
+    __EMIT(MoveWide, sf, opc, __VA_DFL(lsl(0), __VA_ARGS__), imm, rd)
 
 #define movnw(rd, imm, ...) movewide(0, 0, rd, imm, __VA_ARGS__)
 #define movzw(rd, imm, ...) movewide(0, 2, rd, imm, __VA_ARGS__)
@@ -299,7 +307,7 @@ extern void* _ras_invalid_argument_type;
         default: rasEmitLoadStoreImmOff)(                                      \
         RAS_CTX_VAR, size, vr, opc, off,                                       \
         _Generic(off,                                                          \
-            rasReg: __MAKE_EXT(__VA_DFL(uxtx_(), __VA_ARGS__)),                \
+            rasReg: __MAKE_EXT(__VA_DFL(uxtx(), __VA_ARGS__)),                 \
             default: __VA_DFL(0, __VA_ARGS__)),                                \
         rn, rt)
 
@@ -570,12 +578,12 @@ extern void* _ras_invalid_argument_type;
 #define ubfiz _(ubfiz)
 #define ubfx _(ubfx)
 #define extr _(extr)
-#define lsl _(lsl)
-#define lsr _(lsr)
-#define asr _(asr)
+#define lsl_ _(lsl)
+#define lsr_ _(lsr)
+#define asr_ _(asr)
 #define ror _(ror)
-#define sxtb _(sxtb)
-#define sxth _(sxth)
+#define sxtb_ _(sxtb)
+#define sxth_ _(sxth)
 #define movn _(movn)
 #define movz _(movz)
 #define movk _(movk)
