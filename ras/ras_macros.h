@@ -32,7 +32,7 @@ extern void* _ras_invalid_argument_type;
         default: __EMIT(Dword, __FORCE_INT(d)))
 
 #define addsub(sf, op, s, rd, rn, op2, ...)                                    \
-    _addsub(sf, op, s, rd, rn, op2, __VA_DFL(_lsl(0), __VA_ARGS__))
+    _addsub(sf, op, s, rd, rn, op2, __VA_DFL(lsl_(0), __VA_ARGS__))
 #define _addsub(sf, op, s, rd, rn, op2, mod)                                   \
     _Generic(op2,                                                              \
         rasReg: _Generic(mod,                                                  \
@@ -76,7 +76,7 @@ extern void* _ras_invalid_argument_type;
 #define __CINV(n, v) ((n) ? ~(v) : (v))
 
 #define logical(sf, opc, n, rd, rn, op2, ...)                                  \
-    _logical(sf, opc, n, rd, rn, op2, __VA_DFL(_lsl(0), __VA_ARGS__))
+    _logical(sf, opc, n, rd, rn, op2, __VA_DFL(lsl_(0), __VA_ARGS__))
 #define _logical(sf, opc, n, rd, rn, op2, mod)                                 \
     _Generic(op2,                                                              \
         rasReg: __EMIT(LogicalReg, sf, opc, n, __FORCE(rasShift, mod),         \
@@ -212,7 +212,8 @@ extern void* _ras_invalid_argument_type;
 
 #define shift(sf, type, rd, rn, op2)                                           \
     _Generic(op2,                                                              \
-        rasReg: dataproc2source(sf, 0, 8 + type, rd, rn, __FORCE(rasReg, op2)), \
+        rasReg: dataproc2source(sf, 0, 8 + type, rd, rn,                       \
+                                __FORCE(rasReg, op2)),                         \
         default: __EMIT(PseudoShiftImm, sf, type, rd, rn, __FORCE_INT(op2)))
 
 #define lslw(rd, rn, op2) shift(0, 0, rd, rn, op2)
@@ -235,20 +236,20 @@ extern void* _ras_invalid_argument_type;
 
 #define shiftmod(t, amt) ((rasShift) {amt, t})
 
-#define _lsl(amt) shiftmod(0, amt)
-#define _lsr(amt) shiftmod(1, amt)
-#define _asr(amt) shiftmod(2, amt)
+#define lsl_(amt) shiftmod(0, amt)
+#define lsr_(amt) shiftmod(1, amt)
+#define asr_(amt) shiftmod(2, amt)
 
 #define extendmod(type, ...) ((rasExtend) {__VA_DFL(0, __VA_ARGS__), type})
 
-#define _uxtb(...) extendmod(0, __VA_ARGS__)
-#define _uxth(...) extendmod(1, __VA_ARGS__)
-#define _uxtw(...) extendmod(2, __VA_ARGS__)
-#define _uxtx(...) extendmod(3, __VA_ARGS__)
-#define _sxtb(...) extendmod(4, __VA_ARGS__)
-#define _sxth(...) extendmod(5, __VA_ARGS__)
-#define _sxtw(...) extendmod(6, __VA_ARGS__)
-#define _sxtx(...) extendmod(7, __VA_ARGS__)
+#define uxtb_(...) extendmod(0, __VA_ARGS__)
+#define uxth_(...) extendmod(1, __VA_ARGS__)
+#define uxtw_(...) extendmod(2, __VA_ARGS__)
+#define uxtx_(...) extendmod(3, __VA_ARGS__)
+#define sxtb_(...) extendmod(4, __VA_ARGS__)
+#define sxth_(...) extendmod(5, __VA_ARGS__)
+#define sxtw_(...) extendmod(6, __VA_ARGS__)
+#define sxtx_(...) extendmod(7, __VA_ARGS__)
 
 #define pcreladdr(op, rd, l) __EMIT(PCRelAddr, op, l, rd)
 
@@ -257,7 +258,7 @@ extern void* _ras_invalid_argument_type;
 #define adrl(rd, l) __EMIT(PseudoPCRelAddrLong, rd, l)
 
 #define movewide(sf, opc, rd, imm, ...)                                        \
-    __EMIT(MoveWide, sf, opc, __VA_DFL(_lsl(0), __VA_ARGS__), imm, rd)
+    __EMIT(MoveWide, sf, opc, __VA_DFL(lsl_(0), __VA_ARGS__), imm, rd)
 
 #define movnw(rd, imm, ...) movewide(0, 0, rd, imm, __VA_ARGS__)
 #define movzw(rd, imm, ...) movewide(0, 2, rd, imm, __VA_ARGS__)
@@ -296,7 +297,7 @@ extern void* _ras_invalid_argument_type;
         default: rasEmitLoadStoreImmOff)(                                      \
         RAS_CTX_VAR, size, opc, off,                                           \
         _Generic(off,                                                          \
-            rasReg: __MAKE_EXT(__VA_DFL(_uxtx(), __VA_ARGS__)),                \
+            rasReg: __MAKE_EXT(__VA_DFL(uxtx_(), __VA_ARGS__)),                \
             default: __VA_DFL(0, __VA_ARGS__)),                                \
         rn, rt)
 
