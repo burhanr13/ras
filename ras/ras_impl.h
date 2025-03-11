@@ -291,7 +291,7 @@ static void ras_grow(rasBlock* ctx) {
     size_t oldSize = ctx->size;
     ctx->size *= 2;
     ctx->code = jit_alloc(4 * ctx->size);
-    ctx->curr = ctx->code;
+    ctx->curr = ctx->code + oldSize;
     memcpy(ctx->code, oldCode, 4 * oldSize);
     jit_free(oldCode, 4 * oldSize);
 }
