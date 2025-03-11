@@ -85,10 +85,10 @@ void rasEmitDword(rasBlock* ctx, u64 d);
 #define RAS_BIT(b) (1 << (b))
 #define RAS_MASK(b) (RAS_BIT(b) - 1)
 #define RAS_ISNBITSU(n, b) ((u32) (n) >> (b) == 0)
-#define RAS_ISNBITSS(n, b)                                                         \
+#define RAS_ISNBITSS(n, b)                                                     \
     ((s32) (n) >> ((b) - 1) == 0 || (s32) (n) >> ((b) - 1) == -1)
 #define RAS_ISLOWBITS0(n, b) (((n) & RAS_MASK(b)) == 0)
-#define RAS_CHECKR31(r, canbesp)                                                   \
+#define RAS_CHECKR31(r, canbesp)                                               \
     rasAssert(r.idx != 31 || r.isSp == (canbesp), RAS_ERR_BAD_R31)
 
 #define __RAS_EMIT_DECL(name, ...)                                             \
@@ -218,7 +218,11 @@ __RAS_EMIT_DECL(Bitfield, u32 sf, u32 opc, u32 n, u32 immr, u32 imms, rasReg rn,
                 rasReg rd) {
     RAS_CHECKR31(rd, 0);
     RAS_CHECKR31(rn, 0);
-    if (!sf) rasAssert(!(imms & RAS_BIT(5)) && !(immr & RAS_BIT(5)), RAS_ERR_BAD_IMM);
+    rasAssert(RAS_ISNBITSU(immr, 6), RAS_ERR_BAD_IMM);
+    rasAssert(RAS_ISNBITSU(imms, 6), RAS_ERR_BAD_IMM);
+    if (!sf)
+        rasAssert(!(imms & RAS_BIT(5)) && !(immr & RAS_BIT(5)),
+                  RAS_ERR_BAD_IMM);
     rasEmitWord(ctx, rd.idx | rn.idx << 5 | imms << 10 | immr << 16 | n << 22 |
                          opc << 29 | sf << 31 | 0x13000000);
 }
@@ -228,6 +232,7 @@ __RAS_EMIT_DECL(Extract, u32 sf, u32 op21, u32 n, u32 o0, rasReg rm, u32 imms,
     RAS_CHECKR31(rd, 0);
     RAS_CHECKR31(rn, 0);
     RAS_CHECKR31(rm, 0);
+    rasAssert(RAS_ISNBITSU(imms, 6), RAS_ERR_BAD_IMM);
     if (!sf) rasAssert(!(imms & RAS_BIT(5)), RAS_ERR_BAD_IMM);
     rasEmitWord(ctx, rd.idx | rn.idx << 5 | imms << 10 | rm.idx << 16 |
                          o0 << 21 | n << 22 | op21 << 29 | sf << 31 |
@@ -255,7 +260,8 @@ __RAS_EMIT_DECL(LoadStoreImmOff, u32 size, u32 opc, u32 imm, u32 mod, rasReg rn,
                 rasReg rt) {
     RAS_CHECKR31(rt, 0);
     RAS_CHECKR31(rn, 1);
-    if (mod == 0 && RAS_ISLOWBITS0(imm, size) && RAS_ISNBITSU(imm >> size, 12)) {
+    if (mod == 0 && RAS_ISLOWBITS0(imm, size) &&
+        RAS_ISNBITSU(imm >> size, 12)) {
         imm >>= size;
         rasEmitWord(ctx, rt.idx | rn.idx << 5 | imm << 10 | opc << 22 |
                              size << 30 | 0x39000000);
