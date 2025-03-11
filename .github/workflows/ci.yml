@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@v4
+    - name: install capstone
+      run: sudo apt install capstone
     - name: compile tests
       run: |
         cd tests
