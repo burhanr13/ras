@@ -22,6 +22,8 @@
 extern void* _ras_invalid_argument_type;
 #define __FORCE_INT(op)                                                        \
     _Generic(op, rasReg: *(int*) _ras_invalid_argument_type, default: op)
+#define __FORCE_FLT(op)                                                        \
+    _Generic(op, rasVReg: *(int*) _ras_invalid_argument_type, default: op)
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 
@@ -438,6 +440,72 @@ extern void* _ras_invalid_argument_type;
 #define _Lnewext(addr) rasDefineLabelExternal(_Lnew(), addr)
 #define L(l) rasDefineLabel(RAS_CTX_VAR, l)
 #define Lext(l, addr) rasDefineLabelExternal(l, addr)
+
+#define fpmovimm(ftype, m, s, rd, fimm, imm5)                                  \
+    __EMIT(FPMovImm, m, s, ftype, fimm, imm5, rd)
+
+#define fpdataproc1source(ftype, m, s, opcode, rd, rn)                         \
+    __EMIT(FPDataProc1Source, m, s, ftype, opcode, rn, rd)
+
+#define fmovs(rd, op2)                                                         \
+    _Generic(op2,                                                              \
+        rasVReg: fpdataproc1source(0, 0, 0, 0, rd, __FORCE(rasVReg, op2)),     \
+        default: fpmovimm(0, 0, 0, rd, __FORCE_FLT(op2), 0))
+#define fmovd(rd, op2)                                                         \
+    _Generic(op2,                                                              \
+        rasVReg: fpdataproc1source(1, 0, 0, 0, rd, __FORCE(rasVReg, op2)),     \
+        default: fpmovimm(1, 0, 0, rd, __FORCE_FLT(op2), 0))
+
+#define fabss(rd, rn) fpdataproc1source(0, 0, 0, 1, rd, rn)
+#define fnegs(rd, rn) fpdataproc1source(0, 0, 0, 2, rd, rn)
+#define fsqrts(rd, rn) fpdataproc1source(0, 0, 0, 3, rd, rn)
+#define fcvtds(rd, rn) fpdataproc1source(0, 0, 0, 5, rd, rn)
+#define fabsd(rd, rn) fpdataproc1source(1, 0, 0, 1, rd, rn)
+#define fnegd(rd, rn) fpdataproc1source(1, 0, 0, 2, rd, rn)
+#define fsqrtd(rd, rn) fpdataproc1source(1, 0, 0, 3, rd, rn)
+#define fcvtsd(rd, rn) fpdataproc1source(1, 0, 0, 4, rd, rn)
+
+#define fpcompare(ftype, m, s, op, opcode2, rn, rm)                            \
+    __EMIT(FPCompare, m, s, ftype, rm, op, rn, opcode2)
+
+#define fcmps(rn, rm) fpcompare(0, 0, 0, 0, 0, rn, rm)
+#define fcmpzs(rn) fpcompare(0, 0, 0, 0, 8, rn, v0)
+#define fcmpd(rn, rm) fpcompare(1, 0, 0, 0, 0, rn, rm)
+#define fcmpzd(rn) fpcompare(1, 0, 0, 0, 8, rn, v0)
+
+#define fpdataproc2source(ftype, m, s, opcode, rd, rn, rm)                     \
+    __EMIT(FPDataProc2Source, m, s, ftype, rm, opcode, rn, rd)
+
+#define fmuls(rd, rn, rm) fpdataproc2source(0, 0, 0, 0, rd, rn, rm)
+#define fdivs(rd, rn, rm) fpdataproc2source(0, 0, 0, 1, rd, rn, rm)
+#define fadds(rd, rn, rm) fpdataproc2source(0, 0, 0, 2, rd, rn, rm)
+#define fsubs(rd, rn, rm) fpdataproc2source(0, 0, 0, 3, rd, rn, rm)
+#define fmaxs(rd, rn, rm) fpdataproc2source(0, 0, 0, 4, rd, rn, rm)
+#define fmins(rd, rn, rm) fpdataproc2source(0, 0, 0, 5, rd, rn, rm)
+#define fmaxnms(rd, rn, rm) fpdataproc2source(0, 0, 0, 6, rd, rn, rm)
+#define fminnms(rd, rn, rm) fpdataproc2source(0, 0, 0, 7, rd, rn, rm)
+#define fnmuls(rd, rn, rm) fpdataproc2source(0, 0, 0, 8, rd, rn, rm)
+#define fmuld(rd, rn, rm) fpdataproc2source(1, 0, 0, 0, rd, rn, rm)
+#define fdivd(rd, rn, rm) fpdataproc2source(1, 0, 0, 1, rd, rn, rm)
+#define faddd(rd, rn, rm) fpdataproc2source(1, 0, 0, 2, rd, rn, rm)
+#define fsubd(rd, rn, rm) fpdataproc2source(1, 0, 0, 3, rd, rn, rm)
+#define fmaxd(rd, rn, rm) fpdataproc2source(1, 0, 0, 4, rd, rn, rm)
+#define fmind(rd, rn, rm) fpdataproc2source(1, 0, 0, 5, rd, rn, rm)
+#define fmaxnmd(rd, rn, rm) fpdataproc2source(1, 0, 0, 6, rd, rn, rm)
+#define fminnmd(rd, rn, rm) fpdataproc2source(1, 0, 0, 7, rd, rn, rm)
+#define fnmuld(rd, rn, rm) fpdataproc2source(1, 0, 0, 8, rd, rn, rm)
+
+#define fpdataproc3source(ftype, m, s, o1, o0, rd, rn, rm, ra)                 \
+    __EMIT(FPDataProc3Source, m, s, ftype, o1, rm, o0, ra, rn, rd)
+
+#define fmadds(rd, rn, rm, ra) fpdataproc3source(0, 0, 0, 0, 0, rd, rn, rm, ra)
+#define fmsubs(rd, rn, rm, ra) fpdataproc3source(0, 0, 0, 0, 1, rd, rn, rm, ra)
+#define fnmadds(rd, rn, rm, ra) fpdataproc3source(0, 0, 0, 1, 0, rd, rn, rm, ra)
+#define fnmsubs(rd, rn, rm, ra) fpdataproc3source(0, 0, 0, 1, 1, rd, rn, rm, ra)
+#define fmaddd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 0, 0, rd, rn, rm, ra)
+#define fmsubd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 0, 1, rd, rn, rm, ra)
+#define fnmaddd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 1, 0, rd, rn, rm, ra)
+#define fnmsubd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 1, 1, rd, rn, rm, ra)
 
 #define Reg(n) ((rasReg) {n})
 

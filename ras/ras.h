@@ -336,6 +336,52 @@ __RAS_EMIT_DECL(Hint, u32 crm, u32 op2) {
     rasEmitWord(ctx, op2 << 5 | crm << 8 | 0xd503201f);
 }
 
+static inline int rasGenerateFPImm(float fimm, u8* imm8) {
+    u32 imm = *(u32*) &fimm;
+    u32 sgn = imm >> 31;
+    u32 exp = (imm >> 23) & 0xff;
+    u32 mant = imm & RAS_MASK(23);
+    if (!RAS_ISLOWBITS0(mant, 19)) return 0;
+    mant >>= 19;
+    if (!(exp >> 2 == 0x1f || exp >> 2 == 0x20)) return 0;
+    exp &= 7;
+    *imm8 = sgn << 7 | exp << 4 | mant;
+    return 1;
+}
+
+__RAS_EMIT_DECL(FPMovImm, u32 m, u32 s, u32 ftype, float fimm, u32 imm5,
+                rasVReg rd) {
+    u8 imm8;
+    if (!rasGenerateFPImm(fimm, &imm8)) rasAssert(0, RAS_ERR_BAD_IMM);
+    rasEmitWord(ctx, rd.idx | imm5 << 5 | imm8 << 13 | ftype << 22 | s << 29 |
+                         m << 31 | 0x1e201000);
+}
+
+__RAS_EMIT_DECL(FPDataProc1Source, u32 m, u32 s, u32 ftype, u32 opcode,
+                rasVReg rn, rasVReg rd) {
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | opcode << 15 | ftype << 22 |
+                         s << 29 | m << 31 | 0x1e204000);
+}
+
+__RAS_EMIT_DECL(FPCompare, u32 m, u32 s, u32 ftype, rasVReg rm, u32 op,
+                rasVReg rn, u32 opcode2) {
+    rasEmitWord(ctx, opcode2 | rn.idx << 5 | op << 14 | rm.idx << 16 |
+                         ftype << 22 | s << 29 | m << 31 | 0x1e202000);
+}
+
+__RAS_EMIT_DECL(FPDataProc2Source, u32 m, u32 s, u32 ftype, rasVReg rm,
+                u32 opcode, rasVReg rn, rasVReg rd) {
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | opcode << 12 | rm.idx << 16 |
+                         ftype << 22 | s << 29 | m << 31 | 0x1e200800);
+}
+
+__RAS_EMIT_DECL(FPDataProc3Source, u32 m, u32 s, u32 ftype, u32 o1, rasVReg rm,
+                u32 o0, rasVReg ra, rasVReg rn, rasVReg rd) {
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | ra.idx << 10 | o0 << 15 |
+                         rm.idx << 16 | o1 << 21 | ftype << 22 | s << 29 |
+                         m << 31 | 0x1f000000);
+}
+
 #undef RAS_BIT
 #undef RAS_MASK
 #undef RAS_ISNBITSU

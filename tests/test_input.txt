@@ -235,3 +235,34 @@ ret();
 ret(ip1);
 
 nop();
+
+fmovs(v0, 1);
+fmovs(v0, 0.25);
+fmovd(v0, -0.25);
+fmovs(v0, 0.5);
+fmovd(v0, -0.75);
+fmovs(v0, v1);
+fmovd(v0, v1);
+
+fabsd(v0, v1);
+fnegs(v0, v1);
+fcvtsd(v0, v1);
+fcvtds(v0, v1);
+
+fcmps(v0, v1);
+fcmpd(v0, v1);
+fcmpzs(v0);
+fcmpzd(v0);
+
+fadds(v0, v1, v2);
+fsubd(v0, v1, v2);
+fmuls(v0, v1, v2);
+fnmuld(v0, v1, v2);
+fdivs(v0, v1, v2);
+fmaxs(v0, v1, v2);
+fmind(v0, v1, v2);
+
+fmadds(v0, v1, v2, v3);
+fmsubd(v0, v1, v2, v3);
+fnmaddd(v0, v1, v2, v3);
+fnmsubs(v0, v1, v2, v3);
