@@ -21,7 +21,10 @@
 // https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
 extern void* _ras_invalid_argument_type;
 #define __FORCE_INT(op)                                                        \
-    _Generic(op, rasReg: *(int*) _ras_invalid_argument_type, default: op)
+    _Generic(op,                                                               \
+        rasReg: *(int*) _ras_invalid_argument_type,                            \
+        rasLabel: *(int*) _ras_invalid_argument_type,                          \
+        default: op)
 #define __FORCE_FLT(op)                                                        \
     _Generic(op, rasVReg: *(int*) _ras_invalid_argument_type, default: op)
 #define __FORCE(type, val)                                                     \
