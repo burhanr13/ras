@@ -319,9 +319,22 @@ void rasEmitWord(rasBlock* ctx, u32 w) {
 }
 
 void rasEmitDword(rasBlock* ctx, u64 d) {
-    if ((ctx->curr - ctx->code) & 1) rasEmitWord(ctx, 0);
-    rasEmitWord(ctx, d);
-    rasEmitWord(ctx, d >> 32);
+    word(d);
+    word(d >> 32);
+}
+
+void rasAlign(rasBlock* ctx, size_t alignment) {
+    if (alignment & 3) return;
+    alignment >>= 2;
+    for (int i = 0; i < 64; i++) {
+        if (alignment & BIT(i)) {
+            if (alignment != BIT(i)) return;
+            break;
+        }
+    }
+    size_t cur = ctx->curr - ctx->code;
+    size_t aligned = (cur + (alignment - 1)) & ~(alignment - 1);
+    for (int i = 0; i < aligned - cur; i++) word(0);
 }
 
 int rasGenerateLogicalImm(u64 imm, u32 sf, u32* immr, u32* imms, u32* n) {

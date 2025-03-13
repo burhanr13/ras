@@ -83,6 +83,8 @@ int rasGenerateLogicalImm(u64 imm, u32 sf, u32* immr, u32* imms, u32* n);
 void rasEmitWord(rasBlock* ctx, u32 w);
 void rasEmitDword(rasBlock* ctx, u64 d);
 
+void rasAlign(rasBlock* ctx, size_t alignment);
+
 #define RAS_BIT(b) (1 << (b))
 #define RAS_MASK(b) (RAS_BIT(b) - 1)
 #define RAS_ISNBITSU(n, b) ((u32) (n) >> (b) == 0)

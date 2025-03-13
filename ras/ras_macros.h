@@ -27,6 +27,8 @@ extern void* _ras_invalid_argument_type;
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 
+#define align(a) rasAlign(RAS_CTX_VAR, a)
+
 #define word(w) __EMIT(Word, w)
 #define dword(d)                                                               \
     _Generic(d,                                                                \
