@@ -507,6 +507,30 @@ extern void* _ras_invalid_argument_type;
 #define fnmaddd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 1, 0, rd, rn, rm, ra)
 #define fnmsubd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 1, 1, rd, rn, rm, ra)
 
+#define __R2V(vn)                                                              \
+    _Generic(vn,                                                               \
+        rasReg: VReg((vn).idx),                                                \
+        default: *(rasVReg*) _ras_invalid_argument_type)
+
+#define fpconvertintrv(sf, ftype, s, rmode, opcode, rd, rn)                    \
+    __EMIT(FPConvertInt, sf, s, ftype, rmode, opcode, rn, __R2V(rd))
+#define fpconvertintvr(sf, ftype, s, rmode, opcode, rd, rn)                    \
+    __EMIT(FPConvertInt, sf, s, ftype, rmode, opcode, __R2V(rn), rd)
+
+#define fpmovegpr(sf, rd, rn)                                                  \
+    _Generic(rd,                                                               \
+        rasReg: fpconvertintrv(sf, sf, 0, 0, 6, rd, __FORCE(rasVReg, rn)),     \
+        rasVReg: fpconvertintvr(sf, sf, 0, 0, 7, __FORCE(rasVReg, rd), rn))
+#define fmovw(rd, rn) fpmovegpr(0, rd, rn)
+#define fmovx(rd, rn) fpmovegpr(1, rd, rn)
+
+#define scvtfsw(rd, rn) fpconvertintvr(0, 0, 0, 0, 2, rd, rn)
+#define ucvtfsw(rd, rn) fpconvertintvr(0, 0, 0, 0, 3, rd, rn)
+#define scvtfsx(rd, rn) fpconvertintvr(1, 0, 0, 0, 2, rd, rn)
+#define ucvtfsx(rd, rn) fpconvertintvr(1, 0, 0, 0, 3, rd, rn)
+#define scvtfdx(rd, rn) fpconvertintvr(1, 1, 0, 0, 2, rd, rn)
+#define ucvtfdx(rd, rn) fpconvertintvr(1, 1, 0, 0, 3, rd, rn)
+
 #define Reg(n) ((rasReg) {n})
 
 #define r0 Reg(0)

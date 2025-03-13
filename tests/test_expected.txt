@@ -226,6 +226,10 @@ fmov s0, #0.50000000
 fmov d0, #-0.75000000
 fmov s0, s1
 fmov d0, d1
+fmov s0, w0
+fmov w0, s0
+fmov d0, x0
+fmov x0, d0
 fabs d0, d1
 fneg s0, s1
 fcvt s0, d1

@@ -243,6 +243,10 @@ fmovs(v0, 0.5);
 fmovd(v0, -0.75);
 fmovs(v0, v1);
 fmovd(v0, v1);
+fmovw(v0, r0);
+fmovw(r0, v0);
+fmovx(v0, r0);
+fmovx(r0, v0);
 
 fabsd(v0, v1);
 fnegs(v0, v1);
