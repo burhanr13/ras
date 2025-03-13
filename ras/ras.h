@@ -332,8 +332,12 @@ __RAS_EMIT_DECL(BranchReg, u32 opc, u32 op2, u32 op3, rasReg rn, u32 op4) {
                          0xd6000000);
 }
 
-__RAS_EMIT_DECL(Hint, u32 crm, u32 op2) {
-    rasEmitWord(ctx, op2 << 5 | crm << 8 | 0xd503201f);
+__RAS_EMIT_DECL(Hint, u32 opc) {
+    rasEmitWord(ctx, opc << 5 | 0xd503201f);
+}
+
+__RAS_EMIT_DECL(SystemRegMove, u32 l, u32 opc, rasReg rt) {
+    rasEmitWord(ctx, rt.idx | opc << 5 | l << 21 | 0xd5100000);
 }
 
 static inline int rasGenerateFPImm(float fimm, u8* imm8) {

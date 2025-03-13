@@ -431,8 +431,13 @@ extern void* _ras_invalid_argument_type;
 #define bhs(l) b(hs, l)
 #define blo(l) b(lo, l)
 
-#define hint(crm, op2) __EMIT(Hint, crm, op2)
-#define nop() hint(0, 0)
+#define hint(opc) __EMIT(Hint, opc)
+#define nop() hint(0)
+
+#define systemregmove(l, rt, opc) __EMIT(SystemRegMove, l, opc, rt)
+
+#define msr(opc, rt) systemregmove(0, rt, opc)
+#define mrs(rt, opc) systemregmove(1, rt, opc)
 
 #define Label(l, ...) rasLabel l = Lnew(__VA_ARGS__)
 #define Lnew(...) __VA_IF(_Lnewext(__VA_ARGS__), _Lnew(), __VA_ARGS__)
@@ -605,6 +610,8 @@ extern void* _ras_invalid_argument_type;
 #define v29 VReg(29)
 #define v30 VReg(30)
 #define v31 VReg(31)
+
+#define nzcv 0xda10
 
 #ifdef RAS_DEFAULT_SUFFIX
 #define __CAT(x, y) ___CAT(x, y)

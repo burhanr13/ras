@@ -236,6 +236,8 @@ ret(ip1);
 
 nop();
 
+mrs(r0, nzcv);
+
 fmovs(v0, 1);
 fmovs(v0, 0.25);
 fmovd(v0, -0.25);
