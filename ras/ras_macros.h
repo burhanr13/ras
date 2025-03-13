@@ -531,6 +531,8 @@ extern void* _ras_invalid_argument_type;
 
 #define scvtfsw(rd, rn) fpconvertintvr(0, 0, 0, 0, 2, rd, rn)
 #define ucvtfsw(rd, rn) fpconvertintvr(0, 0, 0, 0, 3, rd, rn)
+#define scvtfdw(rd, rn) fpconvertintvr(0, 1, 0, 0, 2, rd, rn)
+#define ucvtfdw(rd, rn) fpconvertintvr(0, 1, 0, 0, 3, rd, rn)
 #define scvtfsx(rd, rn) fpconvertintvr(1, 0, 0, 0, 2, rd, rn)
 #define ucvtfsx(rd, rn) fpconvertintvr(1, 0, 0, 0, 3, rd, rn)
 #define scvtfdx(rd, rn) fpconvertintvr(1, 1, 0, 0, 2, rd, rn)
