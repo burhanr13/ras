@@ -394,6 +394,12 @@ __RAS_EMIT_DECL(FPConvertInt, u32 sf, u32 s, u32 ftype, u32 rmode, u32 opcode,
                          ftype << 22 | s << 29 | sf << 31 | 0x1e200000);
 }
 
+__RAS_EMIT_DECL(AdvSIMD3Same, u32 q, u32 u, u32 size, rasVReg rm,
+                u32 opcode, rasVReg rn, rasVReg rd) {
+    rasEmitWord(ctx, rd.idx | rn.idx << 5 | opcode << 11 | rm.idx << 16 |
+                         size << 22 | u << 29 | q << 30 | 0x0e200400);
+}
+
 #undef RAS_BIT
 #undef RAS_MASK
 #undef RAS_ISNBITSU
