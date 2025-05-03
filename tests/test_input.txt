@@ -250,6 +250,9 @@ fmovw(r0, v0);
 fmovx(v0, r0);
 fmovx(r0, v0);
 
+ucvtfsw(v0, r0);
+fcvtzssx(r0, v0);
+
 fabsd(v0, v1);
 fnegs(v0, v1);
 fcvtsd(v0, v1);
@@ -612,3 +615,12 @@ and16b(v0, v1, v2);
 bic16b(v0, v1, v2);
 orr16b(v0, v1, v2);
 eor8b(v0, v1, v2);
+
+dup8b(v0, r0);
+dup2d(v0, r0);
+dup4h(v0, v1, 0);
+dup4s(v0, v1, 1);
+
+movs(r0, v1, 2);
+movs(v0, 1, v2, 3);
+movs(v0, 1, r2);

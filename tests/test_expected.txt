@@ -231,6 +231,8 @@ fmov s0, w0
 fmov w0, s0
 fmov d0, x0
 fmov x0, d0
+ucvtf s0, w0
+fcvtzs x0, s0
 fabs d0, d1
 fneg s0, s1
 fcvt s0, d1
@@ -588,3 +590,10 @@ and v0.16b, v1.16b, v2.16b
 bic v0.16b, v1.16b, v2.16b
 orr v0.16b, v1.16b, v2.16b
 eor v0.8b, v1.8b, v2.8b
+dup v0.8b, w0
+dup v0.2d, x0
+dup v0.4h, v1.h[0]
+dup v0.4s, v1.s[1]
+mov w0, v1.s[2]
+mov v0.s[1], v2.s[3]
+mov v0.s[1], w2

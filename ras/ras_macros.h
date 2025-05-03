@@ -20,13 +20,12 @@
 // this solution using an undefined symbol is from
 // https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
 extern void* _ras_invalid_argument_type;
-#define __FORCE_INT(op)                                                        \
+#define __FORCE_IMM(op)                                                        \
     _Generic(op,                                                               \
         rasReg: *(int*) _ras_invalid_argument_type,                            \
+        rasVReg: *(int*) _ras_invalid_argument_type,                           \
         rasLabel: *(int*) _ras_invalid_argument_type,                          \
         default: op)
-#define __FORCE_FLT(op)                                                        \
-    _Generic(op, rasVReg: *(int*) _ras_invalid_argument_type, default: op)
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 
@@ -36,7 +35,7 @@ extern void* _ras_invalid_argument_type;
 #define dword(d)                                                               \
     _Generic(d,                                                                \
         rasLabel: __EMIT(AbsAddr, __FORCE(rasLabel, d)),                       \
-        default: __EMIT(Dword, __FORCE_INT(d)))
+        default: __EMIT(Dword, __FORCE_IMM(d)))
 
 #define addsub(sf, op, s, rd, rn, op2, ...)                                    \
     _addsub(sf, op, s, rd, rn, op2, __VA_DFL(lsl(0), __VA_ARGS__))
@@ -51,9 +50,9 @@ extern void* _ras_invalid_argument_type;
                             rd)),                                              \
         default: _Generic(mod,                                                 \
             rasReg: __EMIT(PseudoAddSubImm, sf, op, s, rd, rn,                 \
-                           __FORCE_INT(op2), __FORCE(rasReg, mod)),            \
+                           __FORCE_IMM(op2), __FORCE(rasReg, mod)),            \
             default: __EMIT(AddSubImm, sf, op, s, __FORCE(rasShift, mod),      \
-                            __FORCE_INT(op2), rn, rd)))
+                            __FORCE_IMM(op2), rn, rd)))
 
 #define addw(rd, rn, op2, ...) addsub(0, 0, 0, rd, rn, op2, __VA_ARGS__)
 #define addsw(rd, rn, op2, ...) addsub(0, 0, 1, rd, rn, op2, __VA_ARGS__)
@@ -90,8 +89,8 @@ extern void* _ras_invalid_argument_type;
                        __FORCE(rasReg, op2), rn, rd),                          \
         default: _Generic(mod,                                                 \
             rasReg: __EMIT(PseudoLogicalImm, sf, opc, rd, rn,                  \
-                           __CINV(n, __FORCE_INT(op2)), __FORCE(rasReg, mod)), \
-            default: __EMIT(LogicalImm, sf, opc, __CINV(n, __FORCE_INT(op2)),  \
+                           __CINV(n, __FORCE_IMM(op2)), __FORCE(rasReg, mod)), \
+            default: __EMIT(LogicalImm, sf, opc, __CINV(n, __FORCE_IMM(op2)),  \
                             rn, rd)))
 
 #define andw(rd, rn, op2, ...) logical(0, 0, 0, rd, rn, op2, __VA_ARGS__)
@@ -220,7 +219,7 @@ extern void* _ras_invalid_argument_type;
     _Generic(op2,                                                              \
         rasReg: dataproc2source(sf, 0, 8 + type, rd, rn,                       \
                                 __FORCE(rasReg, op2)),                         \
-        default: __EMIT(PseudoShiftImm, sf, type, rd, rn, __FORCE_INT(op2)))
+        default: __EMIT(PseudoShiftImm, sf, type, rd, rn, __FORCE_IMM(op2)))
 
 #define lslw(rd, rn, op2) shift(0, 0, rd, rn, op2)
 #define lsrw(rd, rn, op2) shift(0, 1, rd, rn, op2)
@@ -281,14 +280,12 @@ extern void* _ras_invalid_argument_type;
 #define movzx(rd, imm, ...) movewide(1, 2, rd, imm, __VA_ARGS__)
 #define movkx(rd, imm, ...) movewide(1, 3, rd, imm, __VA_ARGS__)
 
-#define movw(rd, op2)                                                          \
+#define movegpr(sf, rd, op2)                                                   \
     _Generic(op2,                                                              \
-        rasReg: __EMIT(PseudoMovReg, 0, rd, __FORCE(rasReg, op2)),             \
-        default: __EMIT(PseudoMovImm, 0, rd, __FORCE_INT(op2)))
-#define movx(rd, op2)                                                          \
-    _Generic(op2,                                                              \
-        rasReg: __EMIT(PseudoMovReg, 1, rd, __FORCE(rasReg, op2)),             \
-        default: __EMIT(PseudoMovImm, 1, rd, __FORCE_INT(op2)))
+        rasReg: __EMIT(PseudoMovReg, sf, rd, __FORCE(rasReg, op2)),            \
+        default: __EMIT(PseudoMovImm, sf, rd, __FORCE_IMM(op2)))
+#define movw(rd, op2) movegpr(0, rd, op2)
+#define movx(rd, op2) movegpr(1, rd, op2)
 
 #define __EXPAND_AMOD(amod) __EXPAND_AMOD1(__ID amod)
 #define __EXPAND_AMOD1(amod) __EXPAND_AMOD2(amod)
@@ -451,20 +448,18 @@ extern void* _ras_invalid_argument_type;
 #define L(l) rasDefineLabel(RAS_CTX_VAR, l)
 #define Lext(l, addr) rasDefineLabelExternal(l, addr)
 
-#define fpmovimm(ftype, m, s, rd, fimm, imm5)                                  \
-    __EMIT(FPMovImm, m, s, ftype, fimm, imm5, rd)
+#define fpmoveimm(ftype, m, s, rd, fimm, imm5)                                 \
+    __EMIT(FPMoveImm, m, s, ftype, fimm, imm5, rd)
 
 #define fpdataproc1source(ftype, m, s, opcode, rd, rn)                         \
     __EMIT(FPDataProc1Source, m, s, ftype, opcode, rn, rd)
 
-#define fmovs(rd, op2)                                                         \
+#define fpmove(ftype, rd, op2)                                                 \
     _Generic(op2,                                                              \
-        rasVReg: fpdataproc1source(0, 0, 0, 0, rd, __FORCE(rasVReg, op2)),     \
-        default: fpmovimm(0, 0, 0, rd, __FORCE_FLT(op2), 0))
-#define fmovd(rd, op2)                                                         \
-    _Generic(op2,                                                              \
-        rasVReg: fpdataproc1source(1, 0, 0, 0, rd, __FORCE(rasVReg, op2)),     \
-        default: fpmovimm(1, 0, 0, rd, __FORCE_FLT(op2), 0))
+        rasVReg: fpdataproc1source(ftype, 0, 0, 0, rd, __FORCE(rasVReg, op2)), \
+        default: fpmoveimm(ftype, 0, 0, rd, __FORCE_IMM(op2), 0))
+#define fmovs(rd, op2) fpmove(0, rd, op2)
+#define fmovd(rd, op2) fpmove(1, rd, op2)
 
 #define fabss(rd, rn) fpdataproc1source(0, 0, 0, 1, rd, rn)
 #define fnegs(rd, rn) fpdataproc1source(0, 0, 0, 2, rd, rn)
@@ -517,10 +512,7 @@ extern void* _ras_invalid_argument_type;
 #define fnmaddd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 1, 0, rd, rn, rm, ra)
 #define fnmsubd(rd, rn, rm, ra) fpdataproc3source(1, 0, 0, 1, 1, rd, rn, rm, ra)
 
-#define __R2V(vn)                                                              \
-    _Generic(vn,                                                               \
-        rasReg: VReg((vn).idx),                                                \
-        default: *(rasVReg*) _ras_invalid_argument_type)
+#define __R2V(vn) _Generic(vn, rasReg: VReg((vn).idx))
 
 #define fpconvertintrv(sf, ftype, s, rmode, opcode, rd, rn)                    \
     __EMIT(FPConvertInt, sf, s, ftype, rmode, opcode, rn, __R2V(rd))
@@ -529,8 +521,10 @@ extern void* _ras_invalid_argument_type;
 
 #define fpmovegpr(sf, rd, rn)                                                  \
     _Generic(rd,                                                               \
-        rasReg: fpconvertintrv(sf, sf, 0, 0, 6, rd, __FORCE(rasVReg, rn)),     \
-        rasVReg: fpconvertintvr(sf, sf, 0, 0, 7, __FORCE(rasVReg, rd), rn))
+        rasReg: fpconvertintrv(sf, sf, 0, 0, 6, __FORCE(rasReg, rd),           \
+                               __FORCE(rasVReg, rn)),                          \
+        rasVReg: fpconvertintvr(sf, sf, 0, 0, 7, __FORCE(rasVReg, rd),         \
+                                __FORCE(rasReg, rn)))
 #define fmovw(rd, rn) fpmovegpr(0, rd, rn)
 #define fmovx(rd, rn) fpmovegpr(1, rd, rn)
 
@@ -543,14 +537,80 @@ extern void* _ras_invalid_argument_type;
 #define scvtfdx(rd, rn) fpconvertintvr(1, 1, 0, 0, 2, rd, rn)
 #define ucvtfdx(rd, rn) fpconvertintvr(1, 1, 0, 0, 3, rd, rn)
 
-#define fcvtzsws(rd, rn) fpconvertintrv(0, 0, 0, 3, 0, rd, rn)
-#define fcvtzuws(rd, rn) fpconvertintrv(0, 0, 0, 3, 1, rd, rn)
-#define fcvtzswd(rd, rn) fpconvertintrv(0, 1, 0, 3, 0, rd, rn)
-#define fcvtzuwd(rd, rn) fpconvertintrv(0, 1, 0, 3, 1, rd, rn)
-#define fcvtzsxs(rd, rn) fpconvertintrv(1, 0, 0, 3, 0, rd, rn)
-#define fcvtzuxs(rd, rn) fpconvertintrv(1, 0, 0, 3, 1, rd, rn)
-#define fcvtzsxd(rd, rn) fpconvertintrv(1, 1, 0, 3, 0, rd, rn)
-#define fcvtzuxd(rd, rn) fpconvertintrv(1, 1, 0, 3, 1, rd, rn)
+#define fcvtzssw(rd, rn) fpconvertintrv(0, 0, 0, 3, 0, rd, rn)
+#define fcvtzusw(rd, rn) fpconvertintrv(0, 0, 0, 3, 1, rd, rn)
+#define fcvtzsdw(rd, rn) fpconvertintrv(0, 1, 0, 3, 0, rd, rn)
+#define fcvtzudw(rd, rn) fpconvertintrv(0, 1, 0, 3, 1, rd, rn)
+#define fcvtzssx(rd, rn) fpconvertintrv(1, 0, 0, 3, 0, rd, rn)
+#define fcvtzusx(rd, rn) fpconvertintrv(1, 0, 0, 3, 1, rd, rn)
+#define fcvtzsdx(rd, rn) fpconvertintrv(1, 1, 0, 3, 0, rd, rn)
+#define fcvtzudx(rd, rn) fpconvertintrv(1, 1, 0, 3, 1, rd, rn)
+
+#define advsimdcopy(q, op, imm5, imm4, rd, rn)                                 \
+    __EMIT(AdvSIMDCopy, q, op, imm5, imm4, rn, rd)
+
+#define dup(q, sz, rd, rn, idx)                                                \
+    _Generic(rn,                                                               \
+        rasVReg: advsimdcopy(q, 0, 1 << sz | idx << (sz + 1), 0, rd,           \
+                             __FORCE(rasVReg, rn)),                            \
+        rasReg: advsimdcopy(q, 0, 1 << sz, 1, rd, __R2V(__FORCE(rasReg, rn))))
+#define dup8b(rd, rn, ...) dup(0, 0, rd, rn, __VA_DFL(0, __VA_ARGS__))
+#define dup16b(rd, rn, ...) dup(1, 0, rd, rn, __VA_DFL(0, __VA_ARGS__))
+#define dup4h(rd, rn, ...) dup(0, 1, rd, rn, __VA_DFL(0, __VA_ARGS__))
+#define dup8h(rd, rn, ...) dup(1, 1, rd, rn, __VA_DFL(0, __VA_ARGS__))
+#define dup2s(rd, rn, ...) dup(0, 2, rd, rn, __VA_DFL(0, __VA_ARGS__))
+#define dup4s(rd, rn, ...) dup(1, 2, rd, rn, __VA_DFL(0, __VA_ARGS__))
+#define dup2d(rd, rn, ...) dup(1, 3, rd, rn, __VA_DFL(0, __VA_ARGS__))
+
+#define moveelem(sf, sz, u, rd, rn, idx)                                       \
+    advsimdcopy(sf, 0, 1 << sz | idx << (sz + 1), u ? 7 : 5, __R2V(rd), rn)
+#define smovbw(rd, rn, idx) moveelem(0, 0, 0, rd, rn, idx)
+#define umovbw(rd, rn, idx) moveelem(0, 0, 1, rd, rn, idx)
+#define smovhw(rd, rn, idx) moveelem(0, 1, 0, rd, rn, idx)
+#define umovhw(rd, rn, idx) moveelem(0, 1, 1, rd, rn, idx)
+#define smovsw(rd, rn, idx) moveelem(0, 2, 0, rd, rn, idx)
+#define umovsw(rd, rn, idx) moveelem(0, 2, 1, rd, rn, idx)
+#define smovbx(rd, rn, idx) moveelem(1, 0, 0, rd, rn, idx)
+#define umovbx(rd, rn, idx) moveelem(1, 0, 1, rd, rn, idx)
+#define smovhx(rd, rn, idx) moveelem(1, 1, 0, rd, rn, idx)
+#define umovhx(rd, rn, idx) moveelem(1, 1, 1, rd, rn, idx)
+#define smovsx(rd, rn, idx) moveelem(1, 2, 0, rd, rn, idx)
+#define umovsx(rd, rn, idx) moveelem(1, 2, 1, rd, rn, idx)
+#define smovd(rd, rn, idx) moveelem(1, 3, 0, rd, rn, idx)
+#define umovd(rd, rn, idx) moveelem(1, 3, 1, rd, rn, idx)
+
+#define ins(sz, rd, idx1, rn, idx2)                                            \
+    _Generic(rn,                                                               \
+        rasVReg: advsimdcopy(1, 1, 1 << sz | idx1 << (sz + 1), idx2 << sz, rd, \
+                             __FORCE(rasVReg, rn)),                            \
+        rasReg: advsimdcopy(1, 0, 1 << sz | idx1 << (sz + 1), 3, rd,           \
+                            __R2V(__FORCE(rasReg, rn))))
+#define insb(rd, idx1, rn, ...) ins(0, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
+#define insh(rd, idx1, rn, ...) ins(1, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
+#define inss(rd, idx1, rn, ...) ins(2, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
+#define insd(rd, idx1, rn, ...) ins(3, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
+
+#define movb(rd, idx1, rn, ...) insb(rd, idx1, rn, __VA_OPT__(, ) __VA_ARGS__)
+#define movh(rd, idx1, rn, ...) insh(rd, idx1, rn, __VA_OPT__(, ) __VA_ARGS__)
+
+#define _fixumov(op, rd, rn, idx, ...)                                         \
+    op(__FORCE(rasReg, rd), __FORCE(rasVReg, rn), __FORCE_IMM(idx))
+#define _fixins(op, rd, idx1, rn, ...)                                         \
+    op(__FORCE(rasVReg, rd), __FORCE_IMM(idx1),                                \
+       _Generic(rn,                                                            \
+           rasReg: rn,                                                         \
+           rasVReg: rn,                                                        \
+           default: *(rasReg*) _ras_invalid_argument_type) __VA_OPT__(, )      \
+           __VA_ARGS__)
+
+#define movs(rd, ...)                                                          \
+    _Generic(rd,                                                               \
+        rasReg: _fixumov(umovsw, rd, __VA_ARGS__),                             \
+        rasVReg: _fixins(inss, rd, __VA_ARGS__))
+#define movd(rd, ...)                                                          \
+    _Generic(rd,                                                               \
+        rasReg: _fixumov(umovd, rd, __VA_ARGS__),                              \
+        rasVReg: _fixins(insd, rd, __VA_ARGS__))
 
 #define advsimd3same(q, sz, u, opcode, rd, rn, rm)                             \
     __EMIT(AdvSIMD3Same, q, u, sz, rm, opcode, rn, rd)
@@ -905,6 +965,8 @@ extern void* _ras_invalid_argument_type;
 #define bit16b(rd, rn, rm) advsimd3same(1, 2, 1, 3, rd, rn, rm)
 #define bif8b(rd, rn, rm) advsimd3same(0, 3, 1, 3, rd, rn, rm)
 #define bif16b(rd, rn, rm) advsimd3same(1, 3, 1, 3, rd, rn, rm)
+#define mov8b(rd, rn) orr8b(rd, rn, rn)
+#define mov16b(rd, rn) orr16b(rd, rn, rn)
 
 #define Reg(n) ((rasReg) {n})
 
@@ -939,6 +1001,7 @@ extern void* _ras_invalid_argument_type;
 #define r28 Reg(28)
 #define r29 Reg(29)
 #define r30 Reg(30)
+#define xr r8
 #define ip0 r16
 #define ip1 r17
 #define fp r29
@@ -1063,6 +1126,13 @@ extern void* _ras_invalid_argument_type;
 #define ldp _(ldp)
 #define cbz _(cbz)
 #define cbnz _(cbnz)
+
+#define umovb _(umovb)
+#define smovb _(smovb)
+#define umovh _(umovh)
+#define smovh _(smovh)
+#define umovs _(umovs)
+#define smovs _(smovs)
 
 #endif
 
