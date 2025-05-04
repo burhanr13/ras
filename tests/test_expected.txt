@@ -597,3 +597,5 @@ dup v0.4s, v1.s[1]
 mov w0, v1.s[2]
 mov v0.s[1], v2.s[3]
 mov v0.s[1], w2
+fcmeq v0.4s, v1.4s, #0.0
+fneg v0.4s, v1.4s

@@ -624,3 +624,6 @@ dup4s(v0, v1, 1);
 movs(r0, v1, 2);
 movs(v0, 1, v2, 3);
 movs(v0, 1, r2);
+
+fcmeqz4s(v0, v1);
+fneg4s(v0, v1);
