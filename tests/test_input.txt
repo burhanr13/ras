@@ -625,5 +625,13 @@ movs(r0, v1, 2);
 movs(v0, 1, v2, 3);
 movs(v0, 1, r2);
 
+frintm4s(v0, v1);
 fcmeqz4s(v0, v1);
+fcvtzs2s(v0, v1);
 fneg4s(v0, v1);
+
+faddps(v0, v1);
+faddpd(v0, v1);
+
+frecpes(v0, v1);
+frsqrted(v0, v1);

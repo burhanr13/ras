@@ -597,5 +597,11 @@ dup v0.4s, v1.s[1]
 mov w0, v1.s[2]
 mov v0.s[1], v2.s[3]
 mov v0.s[1], w2
+frintm v0.4s, v1.4s
 fcmeq v0.4s, v1.4s, #0.0
+fcvtzs v0.2s, v1.2s
 fneg v0.4s, v1.4s
+faddp s0, v1.2s
+faddp d0, v1.2d
+frecpe s0, s1
+frsqrte d0, d1
