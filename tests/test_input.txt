@@ -1,4 +1,4 @@
-Label(l1); Label(l2); Label(l3); Label(l4); Label(l5); Label(l6);
+Label(l1); Label(l2); Label(l3); Label(l4); Label(l5); Label(l6); Label(l7);
 L(l1);
 b(l2);
 bl(l1);
@@ -33,6 +33,9 @@ cbnz(r0, l5);
 cbzx(r0, l4);
 cbnzx(r0, l3);
 L(l6);
+tbz(r0, 20, l7);
+tbnz(r0, 50, l1);
+L(l7);
 
 add(r0, r1, 0x123);
 addsx(r2, r3, 1, lsl(12));
@@ -275,6 +278,9 @@ fmadds(v0, v1, v2, v3);
 fmsubd(v0, v1, v2, v3);
 fnmaddd(v0, v1, v2, v3);
 fnmsubs(v0, v1, v2, v3);
+
+fcsels(v0, v1, v2, eq);
+fcseld(v0, v1, v2, ne);
 
 shadd8b(v0, v1, v2);
 shadd16b(v0, v1, v2);
@@ -635,3 +641,5 @@ faddpd(v0, v1);
 
 frecpes(v0, v1);
 frsqrted(v0, v1);
+
+fmov4s(v0, 1.f);
