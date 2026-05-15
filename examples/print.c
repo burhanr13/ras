@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define RAS_MACROS
-#include "ras/ras.h"
+#include "ras/ras_a64.h"
 
 char message[] = "this message was printed by the jit\n";
 

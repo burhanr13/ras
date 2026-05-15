@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define RAS_MACROS
 #define RAS_CTX_VAR testCode
 #define RAS_DEFAULT_SUFFIX W
 #include "ras/ras.h"
+#include "ras/ras_a64.h"
 
 void errorCb(rasError err) {
     fprintf(stderr, "%s\n", rasErrorStrings[err]);

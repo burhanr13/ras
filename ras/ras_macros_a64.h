@@ -1,41 +1,14 @@
-#ifndef __RAS_MACROS_H
-#define __RAS_MACROS_H
+#ifndef __RAS_MACROS_A64_H
+#define __RAS_MACROS_A64_H
 
-#include "ras.h"
+#include "ras_macros_common.h"
 
-#ifndef RAS_CTX_VAR
-#define RAS_CTX_VAR ctx
-#endif
 
-#define __EMIT(name, ...) rasEmit##name(RAS_CTX_VAR, __VA_ARGS__)
-
-#define __ID(...) __VA_ARGS__
-#define __VA_IF_1(t, f, ...) t
-#define __VA_IF_(t, f, ...) f
-#define __VA_IF(t, f, ...) __VA_IF_##__VA_OPT__(1)(__ID(t), f, __VA_ARGS__)
-#define __VA_DFL(dfl, ...) __VA_IF(__ID(__VA_ARGS__), dfl, __VA_ARGS__)
-
-// unfortunately generic requires all branches to be well typed
-// solve this by using more generic
-// this solution using an undefined symbol is from
-// https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
-extern void* _ras_invalid_argument_type;
-#define __FORCE_IMM(op)                                                        \
-    _Generic(op,                                                               \
-        rasReg: *(int*) _ras_invalid_argument_type,                            \
-        rasVReg: *(int*) _ras_invalid_argument_type,                           \
-        rasLabel: *(int*) _ras_invalid_argument_type,                          \
-        default: op)
-#define __FORCE(type, val)                                                     \
-    _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
-
-#define ALIGN(a) rasAlign(RAS_CTX_VAR, a)
-
-#define WORD(w) __EMIT(Word, w)
+#define WORD(w) __EMIT(32, w)
 #define DWORD(d)                                                               \
     _Generic(d,                                                                \
         rasLabel: __EMIT(AbsAddr, __FORCE(rasLabel, d)),                       \
-        default: __EMIT(Dword, __FORCE_IMM(d)))
+        default: __EMIT(64, __FORCE_IMM(d)))
 
 #define ADDSUB(sf, op, s, rd, rn, op2, ...)                                    \
     _ADDSUB(sf, op, s, rd, rn, op2, __VA_DFL(LSL(0), __VA_ARGS__))
@@ -1208,5 +1181,6 @@ extern void* _ras_invalid_argument_type;
 #define SMOVS _(SMOVS)
 
 #endif
+
 
 #endif
