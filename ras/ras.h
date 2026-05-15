@@ -66,6 +66,11 @@ void rasEmit16(rasBlock* ctx, u16 h);
 void rasEmit32(rasBlock* ctx, u32 w);
 void rasEmit64(rasBlock* ctx, u64 d);
 
+static inline void rasEmitAbsAddr(rasBlock* ctx, rasLabel l) {
+    rasAddPatch(ctx, RAS_PATCH_ABS64, l);
+    rasEmit64(ctx, 0);
+}
+
 void rasAlign(rasBlock* ctx, size_t alignment);
 
 #undef bool

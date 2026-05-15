@@ -1,5 +1,7 @@
 #include "ras_a64.h"
 
+#include <stdbool.h>
+
 typedef int8_t s8;
 typedef uint8_t u8;
 typedef int16_t s16;
@@ -96,8 +98,8 @@ bool rasGenerateFPImm(float fimm, u8* imm8) {
     return 1;
 }
 
-void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
-                            rasReg rn, u64 imm, rasReg rtmp) {
+void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasA64Reg rd,
+                            rasA64Reg rn, u64 imm, rasA64Reg rtmp) {
     if (!sf) imm = (s32) imm;
     if (ISNBITSU64(imm, 12)) {
         ADDSUB(sf, op, s, rd, rn, imm);
@@ -121,8 +123,8 @@ void rasEmitPseudoAddSubImm(rasBlock* ctx, u32 sf, u32 op, u32 s, rasReg rd,
     }
 }
 
-void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 sf, u32 opc, rasReg rd,
-                             rasReg rn, u64 imm, rasReg rtmp) {
+void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 sf, u32 opc, rasA64Reg rd,
+                             rasA64Reg rn, u64 imm, rasA64Reg rtmp) {
     u32 immr, imms, n;
     if (rasGenerateLogicalImm(imm, sf, &immr, &imms, &n)) {
         LOGICAL(sf, opc, 0, rd, rn, imm);
@@ -136,7 +138,7 @@ void rasEmitPseudoLogicalImm(rasBlock* ctx, u32 sf, u32 opc, rasReg rd,
     }
 }
 
-void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
+void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasA64Reg rd, u64 imm) {
     if (imm == 0) {
         if (sf) {
             MOVZX(rd, 0);
@@ -200,7 +202,7 @@ void rasEmitPseudoMovImm(rasBlock* ctx, u32 sf, rasReg rd, u64 imm) {
     }
 }
 
-void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm) {
+void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasA64Reg rd, rasA64Reg rm) {
     if (rd.isSp || rm.isSp) {
         if (sf) {
             ADDX(rd, rm, 0);
@@ -216,8 +218,8 @@ void rasEmitPseudoMovReg(rasBlock* ctx, u32 sf, rasReg rd, rasReg rm) {
     }
 }
 
-void rasEmitPseudoShiftImm(rasBlock* ctx, u32 sf, u32 type, rasReg rd,
-                           rasReg rn, u32 imm) {
+void rasEmitPseudoShiftImm(rasBlock* ctx, u32 sf, u32 type, rasA64Reg rd,
+                           rasA64Reg rn, u32 imm) {
     if (sf) {
         switch (type) {
             case 0:
@@ -251,7 +253,7 @@ void rasEmitPseudoShiftImm(rasBlock* ctx, u32 sf, u32 type, rasReg rd,
     }
 }
 
-void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasReg rd, rasLabel lab) {
+void rasEmitPseudoPCRelAddrLong(rasBlock* ctx, rasA64Reg rd, rasLabel lab) {
     ADRP(rd, lab);
     rasAddPatch(ctx, RAS_PATCH_PGOFF12, lab);
     ADDX(rd, rd, 0);

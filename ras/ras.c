@@ -269,7 +269,7 @@ void rasReady(rasBlock* ctx) {
     rasApplyAllPatches(ctx);
 
 #ifndef RAS_USE_RWX
-    jit_protect(ctx->code, 4 * ctx->size, RX);
+    jit_protect(ctx->code, ctx->size, RX);
 #endif
     jit_clearcache(ctx->code, ctx->size);
 }
@@ -301,7 +301,7 @@ void rasAssert(bool condition, rasError err) {
 
 #ifdef RAS_AUTOGROW
 static void ras_grow(rasBlock* ctx) {
-    u32* oldCode = ctx->code;
+    u8* oldCode = ctx->code;
     size_t oldSize = ctx->size;
     ctx->size *= 2;
     ctx->code = jit_alloc(ctx->size);

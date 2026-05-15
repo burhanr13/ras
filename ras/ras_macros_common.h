@@ -20,12 +20,6 @@
 // this solution using an undefined symbol is from
 // https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/c11-generic/#coercion
 extern void* _ras_invalid_argument_type;
-#define __FORCE_IMM(op)                                                        \
-    _Generic(op,                                                               \
-        rasReg: *(int*) _ras_invalid_argument_type,                            \
-        rasVReg: *(int*) _ras_invalid_argument_type,                           \
-        rasLabel: *(int*) _ras_invalid_argument_type,                          \
-        default: op)
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
 

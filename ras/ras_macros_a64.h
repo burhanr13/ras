@@ -3,6 +3,12 @@
 
 #include "ras_macros_common.h"
 
+#define __FORCE_IMM(op)                                                        \
+    _Generic(op,                                                               \
+        rasA64Reg: *(int*) _ras_invalid_argument_type,                            \
+        rasA64VReg: *(int*) _ras_invalid_argument_type,                           \
+        rasLabel: *(int*) _ras_invalid_argument_type,                          \
+        default: op)
 
 #define WORD(w) __EMIT(32, w)
 #define DWORD(d)                                                               \
@@ -14,17 +20,17 @@
     _ADDSUB(sf, op, s, rd, rn, op2, __VA_DFL(LSL(0), __VA_ARGS__))
 #define _ADDSUB(sf, op, s, rd, rn, op2, mod)                                   \
     _Generic(op2,                                                              \
-        rasReg: _Generic(mod,                                                  \
-            rasShift: __EMIT(AddSubShiftedReg, sf, op, s,                      \
-                             __FORCE(rasShift, mod), __FORCE(rasReg, op2), rn, \
+        rasA64Reg: _Generic(mod,                                                  \
+            rasA64Shift: __EMIT(AddSubShiftedReg, sf, op, s,                      \
+                             __FORCE(rasA64Shift, mod), __FORCE(rasA64Reg, op2), rn, \
                              rd),                                              \
             default: __EMIT(AddSubExtendedReg, sf, op, s,                      \
-                            __FORCE(rasExtend, mod), __FORCE(rasReg, op2), rn, \
+                            __FORCE(rasA64Extend, mod), __FORCE(rasA64Reg, op2), rn, \
                             rd)),                                              \
         default: _Generic(mod,                                                 \
-            rasReg: __EMIT(PseudoAddSubImm, sf, op, s, rd, rn,                 \
-                           __FORCE_IMM(op2), __FORCE(rasReg, mod)),            \
-            default: __EMIT(AddSubImm, sf, op, s, __FORCE(rasShift, mod),      \
+            rasA64Reg: __EMIT(PseudoAddSubImm, sf, op, s, rd, rn,                 \
+                           __FORCE_IMM(op2), __FORCE(rasA64Reg, mod)),            \
+            default: __EMIT(AddSubImm, sf, op, s, __FORCE(rasA64Shift, mod),      \
                             __FORCE_IMM(op2), rn, rd)))
 
 #define ADDW(rd, rn, op2, ...) ADDSUB(0, 0, 0, rd, rn, op2, __VA_ARGS__)
@@ -66,11 +72,11 @@
     _LOGICAL(sf, opc, n, rd, rn, op2, __VA_DFL(LSL(0), __VA_ARGS__))
 #define _LOGICAL(sf, opc, n, rd, rn, op2, mod)                                 \
     _Generic(op2,                                                              \
-        rasReg: __EMIT(LogicalReg, sf, opc, n, __FORCE(rasShift, mod),         \
-                       __FORCE(rasReg, op2), rn, rd),                          \
+        rasA64Reg: __EMIT(LogicalReg, sf, opc, n, __FORCE(rasA64Shift, mod),         \
+                       __FORCE(rasA64Reg, op2), rn, rd),                          \
         default: _Generic(mod,                                                 \
-            rasReg: __EMIT(PseudoLogicalImm, sf, opc, rd, rn,                  \
-                           __CINV(n, __FORCE_IMM(op2)), __FORCE(rasReg, mod)), \
+            rasA64Reg: __EMIT(PseudoLogicalImm, sf, opc, rd, rn,                  \
+                           __CINV(n, __FORCE_IMM(op2)), __FORCE(rasA64Reg, mod)), \
             default: __EMIT(LogicalImm, sf, opc, __CINV(n, __FORCE_IMM(op2)),  \
                             rn, rd)))
 
@@ -198,8 +204,8 @@
 
 #define SHIFT(sf, type, rd, rn, op2)                                           \
     _Generic(op2,                                                              \
-        rasReg: DATAPROC2SOURCE(sf, 0, 8 + type, rd, rn,                       \
-                                __FORCE(rasReg, op2)),                         \
+        rasA64Reg: DATAPROC2SOURCE(sf, 0, 8 + type, rd, rn,                       \
+                                __FORCE(rasA64Reg, op2)),                         \
         default: __EMIT(PseudoShiftImm, sf, type, rd, rn, __FORCE_IMM(op2)))
 
 #define LSLW(rd, rn, op2) SHIFT(0, 0, rd, rn, op2)
@@ -212,7 +218,7 @@
 #define RORX(rd, rn, op2) SHIFT(1, 3, rd, rn, op2)
 
 #define _SHIFT(t, name, op, ...)                                               \
-    __VA_IF(__SHIFT(name, op, __VA_DFL(0, __VA_ARGS__)), ((rasShift) {op, t}), \
+    __VA_IF(__SHIFT(name, op, __VA_DFL(0, __VA_ARGS__)), ((rasA64Shift) {op, t}), \
             __VA_ARGS__)
 #define __SHIFT(name, op, op1) ___SHIFT(name, op, op1)
 #define ___SHIFT(name, op, op1, ...) name(op, op1, __VA_ARGS__)
@@ -233,7 +239,7 @@
 #define _EXTEND(t, name, ...) __EXTEND(t, name, __VA_DFL(0, __VA_ARGS__))
 #define __EXTEND(t, name, op) ___EXTEND(t, name, op)
 #define ___EXTEND(t, name, op, ...)                                            \
-    __VA_IF(name(op, __VA_DFL(0, __VA_ARGS__)), ((rasExtend) {op, t}),         \
+    __VA_IF(name(op, __VA_DFL(0, __VA_ARGS__)), ((rasA64Extend) {op, t}),         \
             __VA_ARGS__)
 
 #define UXTB(...) _EXTEND(0, UXTB_, __VA_ARGS__)
@@ -263,7 +269,7 @@
 
 #define MOVEGPR(sf, rd, op2)                                                   \
     _Generic(op2,                                                              \
-        rasReg: __EMIT(PseudoMovReg, sf, rd, __FORCE(rasReg, op2)),            \
+        rasA64Reg: __EMIT(PseudoMovReg, sf, rd, __FORCE(rasA64Reg, op2)),            \
         default: __EMIT(PseudoMovImm, sf, rd, __FORCE_IMM(op2)))
 #define MOVW(rd, op2) MOVEGPR(0, rd, op2)
 #define MOVX(rd, op2) MOVEGPR(1, rd, op2)
@@ -275,23 +281,23 @@
 
 #define __MAKE_EXT(s)                                                          \
     _Generic(s,                                                                \
-        rasShift: __EXT_OF_SHIFT(__FORCE(rasShift, s)),                        \
-        rasExtend: s,                                                          \
-        default: *(rasExtend*) _ras_invalid_argument_type)
-#define __EXT_OF_SHIFT(s) ((rasExtend) {s.amt, 3, s.type != 0 || s.amt > 4})
+        rasA64Shift: __EXT_OF_SHIFT(__FORCE(rasA64Shift, s)),                        \
+        rasA64Extend: s,                                                          \
+        default: *(rasA64Extend*) _ras_invalid_argument_type)
+#define __EXT_OF_SHIFT(s) ((rasA64Extend) {s.amt, 3, s.type != 0 || s.amt > 4})
 
-#define __V2R(vn) _Generic(vn, rasVReg: REG((vn).idx))
+#define __V2R(vn) _Generic(vn, rasA64VReg: REG((vn).idx))
 
 #define LOADSTORE(vr, size, opc, rt, amod)                                     \
     _LOADSTORE(vr, size, opc, rt, __EXPAND_AMOD(amod))
 #define _LOADSTORE(vr, size, opc, rt, amod) __LOADSTORE(vr, size, opc, rt, amod)
 #define __LOADSTORE(vr, size, opc, rt, rn, off, ...)                           \
     _Generic(off,                                                              \
-        rasReg: rasEmitLoadStoreRegOff,                                        \
+        rasA64Reg: rasEmitLoadStoreRegOff,                                        \
         default: rasEmitLoadStoreImmOff)(                                      \
         RAS_CTX_VAR, size, vr, opc, off,                                       \
         _Generic(off,                                                          \
-            rasReg: __MAKE_EXT(__VA_DFL(UXTX(), __VA_ARGS__)),                 \
+            rasA64Reg: __MAKE_EXT(__VA_DFL(UXTX(), __VA_ARGS__)),                 \
             default: __VA_DFL(0, __VA_ARGS__)),                                \
         rn, rt)
 
@@ -442,7 +448,7 @@
 
 #define FPMOVE(ftype, rd, op2)                                                 \
     _Generic(op2,                                                              \
-        rasVReg: FPDATAPROC1SOURCE(ftype, 0, 0, 0, rd, __FORCE(rasVReg, op2)), \
+        rasA64VReg: FPDATAPROC1SOURCE(ftype, 0, 0, 0, rd, __FORCE(rasA64VReg, op2)), \
         default: FPMOVEIMM(ftype, 0, 0, rd, __FORCE_IMM(op2), 0))
 #define FMOVS(rd, op2) FPMOVE(0, rd, op2)
 #define FMOVD(rd, op2) FPMOVE(1, rd, op2)
@@ -499,7 +505,7 @@
 #define FNMADDD(rd, rn, rm, ra) FPDATAPROC3SOURCE(1, 0, 0, 1, 0, rd, rn, rm, ra)
 #define FNMSUBD(rd, rn, rm, ra) FPDATAPROC3SOURCE(1, 0, 0, 1, 1, rd, rn, rm, ra)
 
-#define __R2V(vn) _Generic(vn, rasReg: VREG((vn).idx))
+#define __R2V(vn) _Generic(vn, rasA64Reg: VREG((vn).idx))
 
 #define FPCONVERTINTRV(sf, ftype, s, rmode, opcode, rd, rn)                    \
     __EMIT(FPConvertInt, sf, s, ftype, rmode, opcode, rn, __R2V(rd))
@@ -508,10 +514,10 @@
 
 #define FPMOVEGPR(sf, rd, rn)                                                  \
     _Generic(rd,                                                               \
-        rasReg: FPCONVERTINTRV(sf, sf, 0, 0, 6, __FORCE(rasReg, rd),           \
-                               __FORCE(rasVReg, rn)),                          \
-        rasVReg: FPCONVERTINTVR(sf, sf, 0, 0, 7, __FORCE(rasVReg, rd),         \
-                                __FORCE(rasReg, rn)))
+        rasA64Reg: FPCONVERTINTRV(sf, sf, 0, 0, 6, __FORCE(rasA64Reg, rd),           \
+                               __FORCE(rasA64VReg, rn)),                          \
+        rasA64VReg: FPCONVERTINTVR(sf, sf, 0, 0, 7, __FORCE(rasA64VReg, rd),         \
+                                __FORCE(rasA64Reg, rn)))
 #define FMOVW(rd, rn) FPMOVEGPR(0, rd, rn)
 #define FMOVX(rd, rn) FPMOVEGPR(1, rd, rn)
 
@@ -545,10 +551,10 @@
 
 #define DUP(q, sz, rd, rn, idx)                                                \
     _Generic(rn,                                                               \
-        rasVReg: ADVSIMDCOPY(q, 0, 1 << (sz) | (idx) << ((sz) + 1), 0, rd,     \
-                             __FORCE(rasVReg, rn)),                            \
-        rasReg: ADVSIMDCOPY(q, 0, 1 << (sz), 1, rd,                            \
-                            __R2V(__FORCE(rasReg, rn))))
+        rasA64VReg: ADVSIMDCOPY(q, 0, 1 << (sz) | (idx) << ((sz) + 1), 0, rd,     \
+                             __FORCE(rasA64VReg, rn)),                            \
+        rasA64Reg: ADVSIMDCOPY(q, 0, 1 << (sz), 1, rd,                            \
+                            __R2V(__FORCE(rasA64Reg, rn))))
 #define DUP8B(rd, rn, ...) DUP(0, 0, rd, rn, __VA_DFL(0, __VA_ARGS__))
 #define DUP16B(rd, rn, ...) DUP(1, 0, rd, rn, __VA_DFL(0, __VA_ARGS__))
 #define DUP4H(rd, rn, ...) DUP(0, 1, rd, rn, __VA_DFL(0, __VA_ARGS__))
@@ -577,10 +583,10 @@
 
 #define INS(sz, rd, idx1, rn, idx2)                                            \
     _Generic(rn,                                                               \
-        rasVReg: ADVSIMDCOPY(1, 1, 1 << (sz) | (idx1) << ((sz) + 1),           \
-                             (idx2) << (sz), rd, __FORCE(rasVReg, rn)),        \
-        rasReg: ADVSIMDCOPY(1, 0, 1 << (sz) | (idx1) << ((sz) + 1), 3, rd,     \
-                            __R2V(__FORCE(rasReg, rn))))
+        rasA64VReg: ADVSIMDCOPY(1, 1, 1 << (sz) | (idx1) << ((sz) + 1),           \
+                             (idx2) << (sz), rd, __FORCE(rasA64VReg, rn)),        \
+        rasA64Reg: ADVSIMDCOPY(1, 0, 1 << (sz) | (idx1) << ((sz) + 1), 3, rd,     \
+                            __R2V(__FORCE(rasA64Reg, rn))))
 #define INSB(rd, idx1, rn, ...) INS(0, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
 #define INSH(rd, idx1, rn, ...) INS(1, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
 #define INSS(rd, idx1, rn, ...) INS(2, rd, idx1, rn, __VA_DFL(0, __VA_ARGS__))
@@ -590,23 +596,23 @@
 #define MOVH(rd, idx1, rn, ...) INSH(rd, idx1, rn, __VA_OPT__(, ) __VA_ARGS__)
 
 #define _FIXUMOV(op, rd, rn, idx, ...)                                         \
-    op(__FORCE(rasReg, rd), __FORCE(rasVReg, rn), __FORCE_IMM(idx))
+    op(__FORCE(rasA64Reg, rd), __FORCE(rasA64VReg, rn), __FORCE_IMM(idx))
 #define _FIXINS(op, rd, idx1, rn, ...)                                         \
-    op(__FORCE(rasVReg, rd), __FORCE_IMM(idx1),                                \
+    op(__FORCE(rasA64VReg, rd), __FORCE_IMM(idx1),                                \
        _Generic(rn,                                                            \
-           rasReg: rn,                                                         \
-           rasVReg: rn,                                                        \
-           default: *(rasReg*) _ras_invalid_argument_type) __VA_OPT__(, )      \
+           rasA64Reg: rn,                                                         \
+           rasA64VReg: rn,                                                        \
+           default: *(rasA64Reg*) _ras_invalid_argument_type) __VA_OPT__(, )      \
            __VA_ARGS__)
 
 #define MOVS(rd, ...)                                                          \
     _Generic(rd,                                                               \
-        rasReg: _FIXUMOV(UMOVSW, rd, __VA_ARGS__),                             \
-        rasVReg: _FIXINS(INSS, rd, __VA_ARGS__))
+        rasA64Reg: _FIXUMOV(UMOVSW, rd, __VA_ARGS__),                             \
+        rasA64VReg: _FIXINS(INSS, rd, __VA_ARGS__))
 #define MOVD(rd, ...)                                                          \
     _Generic(rd,                                                               \
-        rasReg: _FIXUMOV(UMOVD, rd, __VA_ARGS__),                              \
-        rasVReg: _FIXINS(INSD, rd, __VA_ARGS__))
+        rasA64Reg: _FIXUMOV(UMOVD, rd, __VA_ARGS__),                              \
+        rasA64VReg: _FIXINS(INSD, rd, __VA_ARGS__))
 
 #define ADVSIMDSCALARPAIRWISE(sz, u, opcode, rd, rn)                           \
     __EMIT(AdvSIMDScalarPairwise, u, sz, opcode, rn, rd)
@@ -1001,7 +1007,7 @@
 #define FMOV4S(rd, fimm) ADVSIMDMODIMMFLOAT(1, 0, 15, 0, rd, fimm)
 #define FMOV2D(rd, fimm) ADVSIMDMODIMMFLOAT(1, 1, 15, 0, rd, fimm)
 
-#define REG(n) ((rasReg) {n})
+#define REG(n) ((rasA64Reg) {n})
 
 #define R0 REG(0)
 #define R1 REG(1)
@@ -1039,10 +1045,10 @@
 #define IP1 R17
 #define FP R29
 #define LR R30
-#define ZR ((rasReg) {31, 0})
-#define SP ((rasReg) {31, 1})
+#define ZR ((rasA64Reg) {31, 0})
+#define SP ((rasA64Reg) {31, 1})
 
-#define VREG(n) ((rasVReg) {n})
+#define VREG(n) ((rasA64VReg) {n})
 
 #define V0 VREG(0)
 #define V1 VREG(1)
