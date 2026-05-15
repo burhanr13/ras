@@ -2,27 +2,27 @@
 #include <stdlib.h>
 
 #define RAS_MACROS
-#define RAS_DEFAULT_SUFFIX w
+#define RAS_DEFAULT_SUFFIX W
 #include "ras/ras.h"
 
 int main() {
     rasBlock* ctx = rasCreate(16384);
 
-    Label(lend);
-    Label(lloop);
+    LABEL(lend);
+    LABEL(lloop);
 
-    push(fp, lr);
-    mov(r1, 0);
+    PUSH(FP, LR);
+    MOV(R1, 0);
     L(lloop);
-    cmp(r0, 0);
-    beq(lend);
-    add(r1, r1, r0);
-    sub(r0, r0, 1);
-    b(lloop);
+    CMP(R0, 0);
+    BEQ(lend);
+    ADD(R1, R1, R0);
+    SUB(R0, R0, 1);
+    B(lloop);
     L(lend);
-    mov(r0, r1);
-    pop(fp, lr);
-    ret();
+    MOV(R0, R1);
+    POP(FP, LR);
+    RET();
 
     rasReady(ctx);
 

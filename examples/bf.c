@@ -27,17 +27,17 @@ int main(int argc, char** argv) {
     int top = 0;
 
     char c;
-    // r25: data ptr
-    // r26: idx
-    // r27: putchar ptr
-    // r28: getchar ptr
-    push(fp, lr);
-    push(r27, r28);
-    push(r25, r26);
-    movx(r26, r0);
-    movx(r27, 0);
-    adrl(r28, Lnew(putchar));
-    adrl(r29, Lnew(getchar));
+    // R25: data ptr
+    // R26: idx
+    // R27: putchar ptr
+    // R28: getchar ptr
+    PUSH(FP, LR);
+    PUSH(R27, R28);
+    PUSH(R25, R26);
+    MOVX(R26, R0);
+    MOVX(R27, 0);
+    ADRL(R28, LNEW(putchar));
+    ADRL(R29, LNEW(getchar));
     while ((c = *p++)) {
         switch (c) {
             case '>': {
@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
                     ct++;
                     p++;
                 }
-                addx(r27, r27, ct);
-                uxth(r27, r27);
+                ADDX(R27, R27, ct);
+                UXTH(R27, R27);
                 break;
             }
             case '<': {
@@ -56,8 +56,8 @@ int main(int argc, char** argv) {
                     ct++;
                     p++;
                 }
-                subx(r27, r27, ct);
-                uxth(r27, r27);
+                SUBX(R27, R27, ct);
+                UXTH(R27, R27);
                 break;
             }
             case '+': {
@@ -66,9 +66,9 @@ int main(int argc, char** argv) {
                     ct++;
                     p++;
                 }
-                ldrb(r0, (r26, r27));
-                addw(r0, r0, ct);
-                strb(r0, (r26, r27));
+                LDRB(R0, (R26, R27));
+                ADDW(R0, R0, ct);
+                STRB(R0, (R26, R27));
                 break;
             }
             case '-': {
@@ -77,33 +77,33 @@ int main(int argc, char** argv) {
                     ct++;
                     p++;
                 }
-                ldrb(r0, (r26, r27));
-                subw(r0, r0, ct);
-                strb(r0, (r26, r27));
+                LDRB(R0, (R26, R27));
+                SUBW(R0, R0, ct);
+                STRB(R0, (R26, R27));
                 break;
             }
             case '.': {
-                ldrb(r0, (r26, r27));
-                blr(r28);
+                LDRB(R0, (R26, R27));
+                BLR(R28);
                 break;
             }
             case ',': {
-                blr(r29);
-                strb(r0, (r26, r27));
+                BLR(R29);
+                STRB(R0, (R26, R27));
                 break;
             }
             case '[': {
                 top++;
-                labs[top][0] = Lnew();
-                labs[top][1] = Lnew();
-                ldrb(r0, (r26, r27));
-                cbzw(r0, labs[top][1]);
+                labs[top][0] = LNEW();
+                labs[top][1] = LNEW();
+                LDRB(R0, (R26, R27));
+                CBZW(R0, labs[top][1]);
                 L(labs[top][0]);
                 break;
             }
             case ']': {
-                ldrb(r0, (r26, r27));
-                cbnzw(r0, labs[top][0]);
+                LDRB(R0, (R26, R27));
+                CBNZW(R0, labs[top][0]);
                 L(labs[top][1]);
                 top--;
                 break;
@@ -111,10 +111,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    pop(r25, r26);
-    pop(r27, r28);
-    pop(fp, lr);
-    ret();
+    POP(R25, R26);
+    POP(R27, R28);
+    POP(FP, LR);
+    RET();
 
     rasReady(ctx);
 

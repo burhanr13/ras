@@ -9,12 +9,12 @@ char message[] = "this message was printed by the jit\n";
 int main() {
     rasBlock* ctx = rasCreate(16384);
 
-    push(fp, lr);
-    adr(r0, Lnew(message));
-    adrl(ip1, Lnew(printf));
-    blr(ip1);
-    pop(fp, lr);
-    ret();
+    PUSH(FP, LR);
+    ADR(R0, LNEW(message));
+    ADRL(IP1, LNEW(printf));
+    BLR(IP1);
+    POP(FP, LR);
+    RET();
 
     rasReady(ctx);
 
