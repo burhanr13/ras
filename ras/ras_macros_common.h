@@ -22,6 +22,21 @@
 extern void* _ras_invalid_argument_type;
 #define __FORCE(type, val)                                                     \
     _Generic(val, type: val, default: *(type*) _ras_invalid_argument_type)
+#define __FORCE_IMM(op)                                                        \
+    _Generic(op,                                                               \
+        unsigned char: op,                                                     \
+        signed char: op,                                                       \
+        unsigned short: op,                                                    \
+        signed short: op,                                                      \
+        unsigned int: op,                                                      \
+        signed int: op,                                                        \
+        unsigned long: op,                                                     \
+        signed long: op,                                                       \
+        unsigned long long: op,                                                \
+        signed long long: op,                                                  \
+        float: op,                                                             \
+        double: op,                                                            \
+        default: *(int*) _ras_invalid_argument_type)
 
 #define ALIGN(a) rasAlign(RAS_CTX_VAR, a)
 
